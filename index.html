@@ -29,6 +29,14 @@
           <span>GitHub</span>
         </a>
 
+        <!-- 主题切换按钮 -->
+        <button class="top-icon-btn" id="themeToggleBtn" type="button" aria-label="切换主题" title="切换白天/黑夜模式">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+          </svg>
+          <span>主题</span>
+        </button>
+
         <button
           class="top-icon-btn coffee-btn"
           id="donateBtn"
@@ -55,6 +63,7 @@
     </div>
   </header>
 
+  <!-- 赞助弹窗 -->
   <div class="donate-modal" id="donateModal" aria-hidden="true">
     <div class="donate-mask" id="donateMask"></div>
     <div class="donate-panel" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
@@ -70,6 +79,12 @@
   </div>
 
   <main class="container">
+    <!-- 全局加载指示器 -->
+    <div id="globalLoading" class="global-loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>生成中，请稍候...</p>
+    </div>
+
     <section class="card">
       <h2>1. 输入 API Key / Enter API Key</h2>
       <div class="row">
@@ -131,10 +146,12 @@
         <div>
           <label class="lab">图1 Image 1</label>
           <input id="editImg1" class="input" type="file" accept="image/png,image/jpeg,image/webp" />
+          <div id="editImg1Preview" class="image-preview"></div>
         </div>
         <div>
           <label class="lab">图2 Image 2</label>
           <input id="editImg2" class="input" type="file" accept="image/png,image/jpeg,image/webp" />
+          <div id="editImg2Preview" class="image-preview"></div>
         </div>
       </div>
 
@@ -174,6 +191,7 @@
 
       <label class="lab">输入图片 Image</label>
       <input id="wanImg" class="input" type="file" accept="image/png,image/jpeg,image/webp" />
+      <div id="wanImgPreview" class="image-preview"></div>
 
       <label class="lab">提示词 Prompt</label>
       <textarea id="wanPrompt" class="textarea" rows="5" placeholder="描述视频风格/动作（例如：镜头缓慢推进，微风吹动头发，电影感）"></textarea>
