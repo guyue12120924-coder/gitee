@@ -79,17 +79,25 @@ for (const file of forbiddenLegacy) {
 }
 
 const workspace = fs.readFileSync(path.join(root, "js/ui/workspace-layout.js"), "utf8");
-for (const marker of ["workspace-rail", "workspace-inspector", "workspace-composer", "studio-drawer", "studioQuickModel"]) {
+for (const marker of ["workspace-rail", "workspace-inspector", "workspace-composer", "studio-drawer", "workspace-preview-actions", "studio-model-developer-tools"]) {
   if (!workspace.includes(marker)) failures.push(`Creator-first workspace marker missing: ${marker}`);
 }
+if (workspace.includes("studioQuickModel")) failures.push("Bottom composer must not duplicate the model selector");
 if (!workspace.includes("enhanceOutputItem")) failures.push("Workspace gallery enhancement is missing");
 if (!workspace.includes("studio-output-debug")) failures.push("Raw output JSON must be collapsed behind debug details");
+if (!workspace.includes('history.dataset.drawer = "history"')) failures.push("Desktop rail should keep a single history utility entry");
 
 const workspaceCss = fs.readFileSync(path.join(root, "workspace.css"), "utf8");
 for (const marker of [".workspace-rail", ".workspace-inspector", ".workspace-composer", ".studio-drawer", ".studio-lightbox"]) {
   if (!workspaceCss.includes(marker)) failures.push(`Workspace CSS marker missing: ${marker}`);
 }
 if (!workspaceCss.includes("@media (max-width: 900px)")) failures.push("Mobile studio breakpoint is missing");
+
+const studioCss = fs.readFileSync(path.join(root, "studio-extras.css"), "utf8");
+if (!studioCss.includes("#modelComparePanel:not([open])")) failures.push("Collapsed model comparison should not occupy canvas space");
+if (!studioCss.includes(".studio-history-top-action")) failures.push("Responsive history navigation rule is missing");
+if (!studioCss.includes(".workspace-composer-input")) failures.push("Compact prompt composer override is missing");
+if (!studioCss.includes(".studio-model-developer-tools")) failures.push("Inspector technical details must be progressive-disclosure content");
 
 const taskTracker = fs.readFileSync(path.join(root, "js/runtime/task-tracker.js"), "utf8");
 if (!taskTracker.includes("if (!run || run.finishedAt) return;")) failures.push("Task tracker must ignore updates after terminal state");
@@ -121,6 +129,7 @@ const studioExtras = fs.readFileSync(path.join(root, "js/ui/studio-extras.js"), 
 if (!studioExtras.includes("DataTransfer")) failures.push("Generated image reuse must populate edit/video file inputs without manual re-upload");
 if (!studioExtras.includes("ctrlKey") || !studioExtras.includes("metaKey")) failures.push("Creator keyboard shortcut support is missing");
 if (!studioExtras.includes("studioTaskBtn")) failures.push("Compact task badge support is missing");
+if (!studioExtras.includes("setupPromptAutosize")) failures.push("Prompt composer auto-resize is missing");
 
 const downloadProxy = fs.readFileSync(path.join(root, "functions/dl.js"), "utf8");
 if (!downloadProxy.includes('url.protocol !== "https:"')) failures.push("Download proxy must require HTTPS targets");
