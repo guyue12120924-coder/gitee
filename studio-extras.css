@@ -53,7 +53,10 @@
 body { background: var(--bg) !important; }
 
 /* ===== Studio convenience layer ===== */
+.topbar-right > a[href*="github.com"],
+#donateBtn,
 .studio-top-secondary { display: none !important; }
+.studio-settings-developer { display: none !important; }
 
 .studio-result-card { position: relative; }
 .studio-result-actions {
