@@ -59,6 +59,7 @@
     return {
       ...run,
       lastRaw: compactValue(run.lastRaw),
+      resultUrls: [...(run.resultUrls || [])],
       timeline: run.timeline.map((item) => ({ ...item })),
       attempts: run.attempts.map((item) => ({ ...item })),
     };
@@ -109,6 +110,7 @@
       cancelRequested: false,
       lastError: null,
       lastRaw: null,
+      resultUrls: [],
       attempts: [],
       timeline: [],
     };
@@ -127,7 +129,7 @@
   }
 
   function update(run, stage, label, message = "", extra = {}) {
-    if (!run || run.state === "success" || run.state === "failed") return;
+    if (!run || run.finishedAt) return;
     run.stage = stage;
     run.stageLabel = label;
     run.message = message;
@@ -183,17 +185,48 @@
     return [...runs.values()].sort((a, b) => b.startedAt - a.startedAt).map(snapshot);
   }
 
-  function modelFromBody(body) {
+  function bodyData(body) {
+    const out = {};
     try {
-      if (body instanceof FormData) return String(body.get("model") || "");
+      if (body instanceof FormData) {
+        for (const [key, value] of body.entries()) {
+          if (!(key in out)) out[key] = value;
+        }
+        return out;
+      }
     } catch {}
     if (typeof body === "string") {
-      try { return String(JSON.parse(body)?.model || ""); } catch {}
+      try {
+        const parsed = JSON.parse(body);
+        return parsed && typeof parsed === "object" ? parsed : out;
+      } catch {}
     }
-    return "";
+    return out;
   }
 
-  function activeRunForModel(modelId) {
+  function modelFromBody(body) {
+    return String(bodyData(body)?.model || "");
+  }
+
+  function inferTask(url, body) {
+    const path = String(url || "").toLowerCase();
+    const data = bodyData(body);
+    if (/\/api\/(?:async\/)?images\/edits/.test(path)) return "edit";
+    if (/\/api\/(?:async\/)?images\/generations/.test(path)) return "t2i";
+    if (/\/api\/async\/videos\/image-to-video/.test(path)) return "i2v";
+    if (/\/api\/async\/videos\//.test(path)) {
+      const hasImage = Boolean(data.image || data.first_frame || data.image_url);
+      return hasImage ? "i2v" : "t2v";
+    }
+    return null;
+  }
+
+  function activeRunForRequest(url, body, modelId) {
+    const inferredTask = inferTask(url, body);
+    if (inferredTask) {
+      const run = current(inferredTask);
+      if (run && !run.finishedAt && (!modelId || run.modelId === modelId)) return run;
+    }
     const candidates = [...activeByTask.values()]
       .map((runId) => runs.get(runId))
       .filter((run) => run && !run.finishedAt && (!modelId || run.modelId === modelId))
@@ -218,7 +251,10 @@
 
   function strategyFromInit(init) {
     if (init?.body instanceof FormData) return "multipart";
-    const contentType = String(init?.headers?.["Content-Type"] || init?.headers?.["content-type"] || "");
+    const headers = init?.headers;
+    let contentType = "";
+    if (headers instanceof Headers) contentType = headers.get("content-type") || "";
+    else contentType = String(headers?.["Content-Type"] || headers?.["content-type"] || "");
     if (contentType.includes("application/json") || typeof init?.body === "string") return "json";
     return "request";
   }
@@ -227,6 +263,42 @@
     if (!raw) return "";
     if (typeof raw === "string") return raw;
     return raw.message || raw.error?.message || raw.error || raw.detail || raw._text || "";
+  }
+
+  function extractUrls(raw) {
+    if (!raw || typeof raw !== "object") return [];
+    return [
+      raw?.output?.file_url,
+      raw?.output?.video_url,
+      raw?.output?.url,
+      raw?.video?.url,
+      ...(Array.isArray(raw?.data) ? raw.data.map((item) => item?.url) : []),
+      ...(Array.isArray(raw?.images) ? raw.images.map((item) => item?.url) : []),
+    ].filter((value) => typeof value === "string" && /^https?:\/\//i.test(value));
+  }
+
+  function rememberUrls(run, raw) {
+    if (!run) return;
+    const merged = new Set([...(run.resultUrls || []), ...extractUrls(raw)]);
+    run.resultUrls = [...merged].slice(0, 12);
+  }
+
+  function activeRunForDownload(url) {
+    let target = "";
+    try { target = new URL(url, location.href).searchParams.get("url") || ""; } catch {}
+    const active = [...activeByTask.values()]
+      .map((runId) => runs.get(runId))
+      .filter((run) => run && !run.finishedAt)
+      .sort((a, b) => b.startedAt - a.startedAt);
+    if (target) {
+      const exact = active.find((run) => (run.resultUrls || []).includes(target));
+      if (exact) return exact;
+      const byRaw = active.find((run) => {
+        try { return JSON.stringify(run.lastRaw || {}).includes(target); } catch { return false; }
+      });
+      if (byRaw) return byRaw;
+    }
+    return active[0] || null;
   }
 
   window.fetch = async function taskAwareFetch(input, init = {}) {
@@ -238,7 +310,7 @@
       const taskId = decodeURIComponent(pollMatch[1]);
       const run = runs.get(taskIdToRun.get(taskId));
       if (run?.cancelRequested) {
-        finish(run, "cancelled", "已停止本地轮询；远端任务可能仍在继续生成。请保留 task_id 以便稍后查询。" );
+        finish(run, "cancelled", "已停止本地轮询；远端任务可能仍在继续生成。请保留 task_id 以便稍后查询。");
         return new Response(JSON.stringify({ status: "cancelled", message: "local polling stopped", task_id: taskId }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -249,8 +321,9 @@
         update(run, "polling", "排队 / 生成中", `正在检查任务状态 · 第 ${run.pollCount} 次`, { pollCount: run.pollCount, taskId });
       }
       const response = await nativeFetch(input, init);
-      if (run) {
+      if (run && !run.finishedAt) {
         const raw = await responseJson(response);
+        rememberUrls(run, raw);
         const state = String(raw?.status || raw?.state || "").toLowerCase();
         if (state === "success") update(run, "server-success", "服务端生成完成", "正在获取生成结果", { lastRaw: raw });
         else if (["failed", "cancelled"].includes(state)) {
@@ -263,14 +336,14 @@
     }
 
     if (url.includes("/dl?url=") && method === "GET") {
-      const run = [...activeByTask.values()].map((runId) => runs.get(runId)).filter((item) => item && !item.finishedAt).sort((a, b) => b.startedAt - a.startedAt)[0];
+      const run = activeRunForDownload(url);
       if (run) update(run, "downloading", "下载结果", "服务端已完成，正在下载图片或视频文件");
       return nativeFetch(input, init);
     }
 
     if (url.includes("/api/") && method === "POST") {
       const modelId = modelFromBody(init?.body);
-      const run = activeRunForModel(modelId);
+      const run = activeRunForRequest(url, init?.body, modelId);
       if (!run) return nativeFetch(input, init);
 
       const endpoint = endpointFromUrl(url);
@@ -307,6 +380,7 @@
         return response;
       }
 
+      rememberUrls(run, raw);
       const taskId = raw?.task_id ? String(raw.task_id) : null;
       if (taskId) {
         run.taskId = taskId;
@@ -346,7 +420,7 @@
         if (result.state === "success") success(run, result.message);
         else if (result.state === "failed") fail(run, result.message, run.lastRaw);
         else if (run.stage === "server-failed") fail(run, run.lastError || "服务端任务失败", run.lastRaw);
-        else if (run.cancelRequested) finish(run, "cancelled", "已停止本地等待；远端任务可能仍在继续。" );
+        else if (run.cancelRequested) finish(run, "cancelled", "已停止本地等待；远端任务可能仍在继续。");
         else fail(run, run.lastError || "运行结束，但没有发现明确的生成结果。", run.lastRaw);
       } catch (error) {
         fail(run, error, run.lastRaw);
