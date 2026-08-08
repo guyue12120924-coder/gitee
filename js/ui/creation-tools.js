@@ -152,7 +152,11 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "prompt-template";
-      button.innerHTML = `<strong>${template.title}</strong><span>${template.hint}</span>`;
+      const strong = document.createElement("strong");
+      strong.textContent = template.title;
+      const span = document.createElement("span");
+      span.textContent = template.hint;
+      button.append(strong, span);
       button.addEventListener("click", () => appendTemplate(task, template));
       bank.appendChild(button);
     }
@@ -254,7 +258,7 @@
     try {
       for (let i = 0; i < available.length; i++) {
         const modelId = available[i];
-        if (status) status.innerHTML = `<strong>${i + 1}/${available.length}</strong> 正在生成 ${modelId}…`;
+        if (status) status.textContent = `${i + 1}/${available.length} 正在生成 ${modelId}…`;
         select.value = modelId;
         dispatchInput(select);
         await new Promise((resolve) => setTimeout(resolve, 90));
@@ -326,7 +330,46 @@
     if (panel) panel.hidden = activeTask() !== "t2i";
   }
 
+  function setupApiKeyPrivacy() {
+    const input = $("apiKey");
+    if (!input) return;
+    input.type = "password";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    if ($("btnToggleApiKey")) return;
+    const button = document.createElement("button");
+    button.id = "btnToggleApiKey";
+    button.type = "button";
+    button.className = "btn";
+    button.textContent = "显示 Key";
+    button.addEventListener("click", () => {
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "显示 Key" : "隐藏 Key";
+    });
+    input.insertAdjacentElement("afterend", button);
+  }
+
+  function setupOutputCleanup() {
+    const button = $("btnClearOutput");
+    const output = $("output");
+    if (!button || !output || button.dataset.blobCleanupBound === "1") return;
+    button.dataset.blobCleanupBound = "1";
+    button.addEventListener("click", () => {
+      const urls = new Set();
+      for (const node of output.querySelectorAll("img,video,source,a")) {
+        const value = node.currentSrc || node.src || node.href || "";
+        if (String(value).startsWith("blob:")) urls.add(String(value));
+      }
+      for (const url of urls) {
+        try { URL.revokeObjectURL(url); } catch {}
+      }
+    }, true);
+  }
+
   function init() {
+    setupApiKeyPrivacy();
+    setupOutputCleanup();
     for (const task of Object.keys(TASKS)) createPromptTools(task);
     createComparePanel();
     $("modelSel")?.addEventListener("change", syncCompareVisibility);
