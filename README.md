@@ -10,8 +10,9 @@
 - 文生视频（Text-to-Video）
 - 每个功能均支持多模型切换
 - 支持自定义模型 ID、Endpoint 与附加 JSON 参数
-- 模型参数由 Adapter 自动生成，切换模型后只显示该模型适用参数
 - 可手动尝试 `GET /v1/models` 同步当前 Token 可见模型；该接口未作为必需能力，失败不影响内置模型和自定义模型
+- 模型参数由 Adapter schema 动态生成
+- 生成任务中心显示请求、任务创建、轮询、下载、成功/失败和调试信息
 - 生成结果直接在网页展示并提供下载
 
 ## 内置模型
@@ -130,7 +131,7 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 - API Endpoint
 - 附加 JSON 参数
 
-这样 Gitee 上线新模型后，即使项目尚未更新，也可以直接测试。自定义模型会使用当前任务的通用 Adapter 参数面板，再通过高级 JSON 覆盖特殊字段。
+这样 Gitee 上线新模型后，即使项目尚未更新，也可以直接测试。
 
 ## API 与兼容策略
 
@@ -160,29 +161,53 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 ## 模型驱动参数 UI
 
-第三阶段开始由 Adapter 同时声明“怎么请求”和“页面应该显示哪些参数”。参数描述统一通过 `parameters` schema 提供，`js/ui/model-parameter-ui.js` 根据当前模型自动渲染。
+第三阶段以后，模型参数不再依赖固定展示的 Wan / Hunyuan 表单，而由 Adapter 的 `parameters` schema 决定。
 
-例如 `qwen-image` 只展示 Qwen 原生尺寸，`z-image` 展示尺寸和生成张数；普通视频模型展示分辨率、比例、时长等通用参数；Wan2.2 会展示分辨率预设、宽高、时长、Seed，并把 steps、guidance、FPS、帧数、ZIP 等放进“高级模型参数”；HunyuanVideo-1.5 则只展示自己对应的比例、帧数、Seed、steps 和 FPS。
+例如：
 
-Adapter 中的参数 schema 采用类似下面的形式：
+- Qwen 文生图只显示其原生尺寸桶
+- z-image 显示分辨率与生成张数
+- 通用视频模型显示比例、分辨率、时长，并把 Seed 等放到高级参数
+- Wan2.2 显示自己的分辨率、宽高、时长、Seed，并保留 steps、guidance、FPS、frames、ZIP 等高级能力
+- HunyuanVideo-1.5 显示自己的 ratio、frames、Seed、steps、FPS
 
-```js
-parameters: [
-  {
-    key: "duration",
-    label: "时长（秒）",
-    type: "number",
-    sourceId: "mmI2VDuration",
-    min: 1,
-    max: 30,
-    default: 5
-  }
-]
+`js/ui/model-parameter-ui.js` 负责把 schema 渲染为“常用参数 / 高级模型参数”，并同步到底层兼容输入，因此不会破坏已有请求逻辑。
+
+## 生成任务与错误中心
+
+第四阶段增加实时生成任务中心。每次点击文生图、编辑、图生视频或文生视频的执行按钮，都会创建一个本地任务记录，并跟踪：
+
+```text
+准备参数
+  ↓
+提交生成请求
+  ↓
+兼容重试（如有）
+  ↓
+任务已创建 / task_id
+  ↓
+排队 / 生成中（轮询次数 + 已耗时）
+  ↓
+服务端完成
+  ↓
+下载结果
+  ↓
+生成完成
 ```
 
-如果 Registry 中某个具体模型定义了 `limits.duration`，Adapter Registry 会自动覆盖通用 schema 的 `min`、`max` 和推荐值。因此 ViduQ3、ViduQ2、HappyHorse、Wan2.7 等模型切换后会直接显示各自允许的时长范围，不再依赖手写 UI 判断。
+如果失败，任务卡会保留最后的 HTTP 状态、Endpoint、请求格式、原始响应和请求尝试记录，并根据常见错误给出可读提示，例如：
 
-为了降低重构风险，旧 HTML 参数输入目前仍作为隐藏的兼容数据层保留。新的参数面板会把用户输入同步到底层旧输入，再由现有稳定请求流程读取；页面上不再展示那些固定的 Wan/Hunyuan 参数块。这样第三阶段完成后可以先保持 API 行为不变，再在后续阶段逐步删除兼容 DOM。
+- Token / 权限问题
+- 额度或频率限制
+- duration 时长范围错误
+- size / resolution 尺寸错误
+- image / first_frame 图片字段问题
+- Endpoint / Method 不匹配
+- 400 / 422 参数错误
+
+失败任务支持“一键重新生成”和“复制错误”；异步视频任务还可复制 `task_id`。
+
+“停止本地等待”只会停止当前网页继续轮询，不会向 Gitee 发出远端取消任务请求，因此服务端任务可能仍继续生成。
 
 ## 运行时验证说明
 
@@ -190,7 +215,7 @@ parameters: [
 
 ## 前端运行时结构
 
-第三阶段完成后，前端加载顺序固定为：
+第四阶段完成后，前端加载顺序固定为：
 
 ```text
 app.js
@@ -208,27 +233,33 @@ multi-model.js
 js/runtime/model-runtime.js
   ↓
 js/ui/model-parameter-ui.js
+  ↓
+js/runtime/task-tracker.js
+  ↓
+js/ui/task-center.js
 ```
 
 职责划分：
 
 - `app.js`：原项目基础 UI、主题、预览和已验证旧链路，作为兼容基线
 - `js/models/registry.js`：唯一模型目录，记录任务、分组、默认模型、状态、限制和 Adapter ID
-- `js/adapters/adapter-registry.js`：Adapter 注册、模型到 Adapter 的解析，以及模型参数 schema 与 Registry 限制的合并
-- `js/adapters/image-adapters.js`：Qwen、z-image、通用图像和图像编辑适配，同时声明图像模型参数
-- `js/adapters/video-adapters.js`：通用视频、Wan I2V、Hunyuan T2V 适配，同时声明视频模型参数
+- `js/adapters/adapter-registry.js`：Adapter 注册与模型到 Adapter 的解析入口
+- `js/adapters/image-adapters.js`：Qwen、z-image、通用图像和图像编辑适配
+- `js/adapters/video-adapters.js`：通用视频、Wan I2V、Hunyuan T2V 适配
 - `multi-model.js`：模型选择、自定义模型、生成流程与模型同步；不再维护一份重复模型清单
 - `js/runtime/model-runtime.js`：健康状态、请求重试、时长校正、Loading 和 Wan 分段等运行时能力
-- `js/ui/model-parameter-ui.js`：根据当前 Adapter 动态渲染常用/高级参数，并同步到底层兼容输入
+- `js/ui/model-parameter-ui.js`：由 Adapter schema 动态生成参数面板
+- `js/runtime/task-tracker.js`：跟踪生成按钮、API 请求、task_id、轮询、结果下载和任务状态
+- `js/ui/task-center.js`：实时进度卡、错误解释、请求尝试、复制 task_id / 错误、重新生成和停止本地等待
 
-第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态；第二阶段把模型定义和模型差异从主流程抽离；第三阶段进一步把参数界面从固定 HTML 转为 Adapter 驱动。
+第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态。
 
 ## 新增模型的推荐方式
 
 以后新增普通模型时，优先只做两件事：
 
 1. 在 `js/models/registry.js` 增加模型条目，并绑定已有 Adapter。
-2. 只有当请求结构或参数界面真的不同，才在 `js/adapters/` 新增或扩展 Adapter。
+2. 只有当请求结构真的不同，才在 `js/adapters/` 新增或扩展 Adapter。
 
 例如一个新的通用文生图模型通常只需：
 
@@ -241,7 +272,7 @@ js/ui/model-parameter-ui.js
 }
 ```
 
-它会自动继承 `generic-image` 的请求策略和参数面板，不需要再修改 HTML 或生成主流程。
+不需要再修改请求主流程。
 
 ## Cloudflare Pages 部署
 
@@ -269,13 +300,15 @@ wrangler pages dev .
 - `index.html`：页面与四类功能面板，并显式按依赖顺序加载前端脚本
 - `app.js`：原项目基础功能与兼容基线
 - `js/models/registry.js`：集中模型 Registry
-- `js/adapters/adapter-registry.js`：Adapter 注册中心与参数 schema 解析
-- `js/adapters/image-adapters.js`：图像/编辑 Adapter 与参数 schema
-- `js/adapters/video-adapters.js`：视频 Adapter 与参数 schema
+- `js/adapters/adapter-registry.js`：Adapter 注册中心
+- `js/adapters/image-adapters.js`：图像/编辑 Adapter
+- `js/adapters/video-adapters.js`：视频 Adapter
 - `multi-model.js`：多模型 UI、统一生成入口和实验性同步
-- `js/runtime/model-runtime.js`：统一运行时
-- `js/ui/model-parameter-ui.js`：模型驱动参数渲染器
-- `styles.css`：页面样式
+- `js/runtime/model-runtime.js`：统一模型运行时
+- `js/ui/model-parameter-ui.js`：模型驱动参数 UI
+- `js/runtime/task-tracker.js`：生成任务生命周期跟踪
+- `js/ui/task-center.js`：任务进度与错误中心
+- `styles.css`：页面基础样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
 - `functions/_middleware.js`：首页缓存控制
