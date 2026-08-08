@@ -339,13 +339,16 @@ a.studio-result-action {
 .studio-settings-api .workspace-api-card h2 { display: none !important; }
 .studio-settings-api .workspace-api-card .row {
   display: grid !important;
-  grid-template-columns: minmax(0,1fr) auto;
+  grid-template-columns: minmax(0,1fr) auto auto;
   gap: 7px !important;
+  align-items: center;
 }
 .studio-settings-api #apiKey { grid-column: 1 / -1; }
+.studio-settings-api .chk { grid-column: 1; font-size: 10px; }
+.studio-settings-api #btnToggleApiKey { grid-column: 2; }
+.studio-settings-api #btnClearKey { grid-column: 3; }
 .studio-settings-api #btnToggleApiKey,
 .studio-settings-api #btnClearKey { min-height: 34px; }
-.studio-settings-api .chk { font-size: 10px; }
 .studio-settings-api .hint {
   margin-top: 8px !important;
   color: var(--muted);
@@ -385,6 +388,14 @@ a.studio-result-action {
   font-weight: 700;
   cursor: pointer;
 }
+.studio-product-settings .studio-settings-developer .studio-compat-card {
+  display: block !important;
+  margin: 10px 0 0 !important;
+  padding: 10px !important;
+  border: 0 !important;
+  background: var(--studio-soft) !important;
+  box-shadow: none !important;
+}
 .studio-settings-extras { display: none !important; }
 
 @media (max-width: 900px) {
@@ -397,4 +408,8 @@ a.studio-result-action {
 @media (max-width: 560px) {
   .studio-settings-links-product { grid-template-columns: 1fr; }
   .studio-result-action { padding: 0 8px; font-size: 9px; }
+  .studio-settings-api .workspace-api-card .row { grid-template-columns: 1fr auto !important; }
+  .studio-settings-api .chk { grid-column: 1 / -1; }
+  .studio-settings-api #btnToggleApiKey { grid-column: 1; }
+  .studio-settings-api #btnClearKey { grid-column: 2; }
 }
