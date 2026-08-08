@@ -244,6 +244,19 @@
   }
   function inspectNewOutput(before) { const items = [...document.querySelectorAll("#output .item")].filter((item) => !before.has(item)); const error = items.find((item) => /错误|失败|error|failed/i.test(item.querySelector("h3")?.textContent || "")); const media = items.find((item) => item.querySelector("img,video")); if (error) return { state: "fail", detail: error.querySelector(".meta")?.textContent || error.textContent.slice(0,180) }; if (media) return { state: "pass", detail: "最近一次完整生成成功" }; return { state: "unknown", detail: "未发现明确结果" }; }
 
+  function shouldRecordDetectedHealth(task, detected) {
+    if (detected.state === "pass") return true;
+    if (detected.state !== "fail") return false;
+    const run = window.GiteeTaskTracker?.current?.(task);
+    if (run) {
+      if (run.cancelRequested || run.state === "cancelled") return false;
+      if ((run.requestCount || 0) === 0) return false;
+    }
+    const text = String(detected.detail || "").toLowerCase();
+    if (/请输入|请选择|请先上传|api key|token|401|403|429|unauthorized|forbidden|permission|quota|额度|余额|rate limit|failed to fetch|network|timeout|超时/.test(text)) return false;
+    return true;
+  }
+
   function addHealthRow(task, buttonText, noteText) {
     const box = $(SELECT_IDS[task])?.closest(".mm-model-box"); if (!box || $(`mmHealth-${task}`)) return;
     const row = document.createElement("div"); row.className = "mm-health-row"; row.innerHTML = `<div id="mmHealth-${task}" class="mm-health"></div><button type="button" class="btn" id="mmTest-${task}">${buttonText}</button><span class="hint mm-test-note">${noteText}</span>`; box.appendChild(row);
@@ -314,7 +327,12 @@
         const requested = task === "i2v" ? (Number.parseFloat($("wanDuration")?.value || String(segmentSeconds || 5)) || (segmentSeconds || 5)) : 0;
         if (segmentSeconds && requested > segmentSeconds) await runSegmentedVideo(original,event,requested,segmentSeconds); else await original.call(this,event);
       } catch (e) { addInfo(`${task === "i2v" ? "图生视频" : "模型"}运行错误`, String(e?.message || e)); }
-      finally { button.disabled = false; setLoading(false); const detected = inspectNewOutput(before); if (["pass","fail"].includes(detected.state)) writeLocalTest(task,modelId,detected.state,detected.detail); }
+      finally {
+        button.disabled = false;
+        setLoading(false);
+        const detected = inspectNewOutput(before);
+        if (shouldRecordDetectedHealth(task, detected)) writeLocalTest(task, modelId, detected.state, detected.detail);
+      }
     };
   }
 
