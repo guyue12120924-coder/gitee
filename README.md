@@ -1,74 +1,169 @@
-# Image View 多模型工具（Cloudflare Pages / Workers 直接部署）
+# Image View · Gitee AI 多模型工作台
 
-**纯 HTML + JS** 的网页版本：
-- **z-image 文生图**
-- **Edit-2511 图像编辑（两张图 + prompt + task_types）**
-- **Wan2.2 图生视频（按 Duration 分段生成）**
-- 生成的 **图片/视频直接在网页展示**，并提供 **下载按钮（下载后可直接查看/播放）**。
+这是一个可直接部署到 Cloudflare Pages / Workers 的纯 HTML + JavaScript 多模态生成前端，统一通过 Gitee AI Serverless API 调用模型。
 
-> 说明：桌面版 Wan2.2 会用 ffmpeg 合并/裁剪成一个最终 mp4。  
-> Cloudflare Pages/Workers 环境无法运行原生 ffmpeg，因此网页版会 **分段分别提供可播放/可下载 mp4**（可选一键 zip 打包下载）。
+## 主要功能
 
----
+- 文生图（Text-to-Image）
+- 图像编辑（Image Edit）
+- 图生视频（Image-to-Video）
+- 文生视频（Text-to-Video）
+- 每个功能均支持多模型切换
+- 支持自定义模型 ID、Endpoint 与附加 JSON 参数
+- 尝试通过 `GET /v1/models` 自动同步当前 Token 可见模型；接口不可用时自动退回内置精选模型
+- 生成结果直接在网页展示并提供下载
 
-## 一、Cloudflare Pages 一键部署（推荐）
+## 内置模型
 
-本项目已经包含 Pages Functions 代理：
-- `/api/*` -> 代理到 `https://ai.gitee.com/v1/*`（解决 CORS）
-- `/dl?url=...` -> 代理下载 `file_url`/图片 url（解决跨域下载）
+内置列表优先选择 Gitee AI 当前 Serverless API 模型广场中质量较高、较热门或官方推荐的模型。
 
-### 目录结构
-- `index.html` / `app.js` / `styles.css`：前端页面
-- `functions/api/[...path].js`：代理 v1 API
-- `functions/dl.js`：代理下载
+### 文生图
 
-### 部署方式
-1. 把整个目录上传到你的 Git 仓库（或直接用 Cloudflare Pages 上传）
-2. Cloudflare Pages 创建项目
-3. **Build command 留空**（或 `""`）
-4. **Output directory** 选择仓库根目录（`/`）
-5. 部署完成后，访问你的 Pages 域名即可使用
+- Qwen-Image-2512
+- FLUX.2-dev
+- Qwen-Image
+- FLUX.1-schnell
+- z-image-turbo
+- Z-Image
+- GLM-Image
+- HiDream-I1-Full
+- CogView4-6B
+- LongCat-Image
+- FLUX.1-dev
+- FLUX.1-Krea-dev
+- FLUX.2-klein-9B
+- FLUX.2-klein-4B
 
-本地调试（可选）：  
-- 安装 wrangler
-- 在项目根目录运行：`wrangler pages dev .`
+### 图像编辑
 
----
+- Qwen-Image-Edit-2511（默认推荐）
+- LongCat-Image-Edit
+- Qwen-Image-Edit
+- FLUX.1-Kontext-dev
+- DreamO
+- Qwen-Image-Layered
 
-## 二、只用 Cloudflare Worker 作为代理（可选）
+### 图生视频
 
-如果你不想用 Pages Functions，也可以部署独立 Worker 作为代理：
-- `worker-proxy.js` 是一个可直接部署的 Worker
-- 代理规则：
-  - `/v1/*` -> `https://ai.gitee.com/v1/*`
-  - `/dl?url=...` -> 代理下载任意 https/http 资源
+- ViduQ3-Pro
+- Wan2.7
+- ViduQ2-Pro
+- ViduQ3-Turbo
+- Wan2_2-I2V-A14B
+- ViduQ2-Turbo
+- HappyHorse-1.1
+- HappyHorse-1.0
+- LTX-2
 
-你需要把前端里的代理路径改成 Worker 地址（高级玩法，先用 Pages 推荐方案就行）。
+### 文生视频
 
----
+- ViduQ3-Pro
+- Wan2.7
+- ViduQ3-Turbo
+- LTX-2
+- HunyuanVideo-1.5
+- Wan2.1-T2V-14B
 
-## 三、使用说明
+> Gitee AI 的模型上下线、模型 ID、参数和 API Endpoint 可能随平台更新变化。项目提供“自定义模型”和 Endpoint 覆盖，便于直接适配新模型。
 
-1. 打开网页，输入 **API Key**
-2. 选择模型
-3. 填参数并点击执行
-4. 结果会出现在 **Output** 区域：
-   - 图片直接显示 + 下载按钮（png）
-   - 视频直接播放 + 下载按钮（mp4）
-   - 任务 JSON 会显示并可下载（方便排障）
+## 模型切换逻辑
 
----
+API Token 负责身份和调用权限，真正指定模型的是请求中的 `model` 字段。
 
-## 常见问题
+例如图像编辑请求会根据页面选择动态发送：
 
-### 1) 下载按钮点了没反应？
-网页版会先把文件通过 `/dl` 拉到浏览器，再用 Blob 触发下载。  
-如果你生成的视频特别大，可能需要等待一点点加载完成（浏览器网络面板能看到下载进度）。
+```text
+model = Qwen-Image-Edit-2511
+```
 
-### 2) z-image 报 404 或接口不通？
-网页版默认按 OpenAI Images Generations 路径调用：`POST /v1/images/generations`  
-如果你这家服务端路径不同，也可以按你的实际返回错误 JSON 改一下映射。
+或：
 
----
+```text
+model = LongCat-Image-Edit
+```
 
-祝你部署顺利。
+不再把四个功能固定到单一模型。
+
+## 自动同步模型
+
+输入 Gitee AI Token 后，可点击“同步 Gitee 模型”。网页会尝试：
+
+```text
+GET /api/models
+    ↓
+Cloudflare Pages Function
+    ↓
+GET https://ai.gitee.com/v1/models
+```
+
+如果 Gitee 当前 Token / 接口返回 OpenAI 风格模型列表，网页会按模型名称自动归类到：
+
+- 文生图
+- 图像编辑
+- 图生视频
+- 文生视频
+
+自动同步失败不会影响使用，内置模型和自定义模型始终可用。
+
+## 自定义模型
+
+每个功能下拉框最后都有“自定义模型…”。可填写：
+
+- 模型 ID
+- API Endpoint
+- 附加 JSON 参数
+
+这样 Gitee 上线新模型后，即使项目尚未更新，也可以直接测试。
+
+## API 与兼容策略
+
+项目默认通过同域代理访问：
+
+```text
+/api/* -> https://ai.gitee.com/v1/*
+```
+
+下载结果通过：
+
+```text
+/dl?url=...
+```
+
+解决浏览器 CORS / 跨域下载问题。
+
+不同视频和编辑模型的参数格式可能不同，因此多模型扩展加入了兼容请求策略：
+
+- 图像编辑优先尝试异步 edits 接口，必要时尝试同步 edits
+- 图生视频会在通用视频参数与 Wan 兼容参数之间自动重试
+- 文生视频对 HunyuanVideo-1.5 保留原项目已验证参数，对其他模型优先使用 Gitee 通用视频参数并提供兼容重试
+
+如果某个新模型参数特殊，可在“高级”区域用 Endpoint / 附加 JSON 参数覆盖。
+
+## Cloudflare Pages 部署
+
+项目包含 Pages Functions：
+
+- `functions/api/[[path]].js`：代理 Gitee AI `/v1/*`
+- `functions/dl.js`：代理图片 / 视频下载
+
+部署步骤：
+
+1. 将仓库连接到 Cloudflare Pages
+2. Build command 留空
+3. Output directory 使用仓库根目录 `/`
+4. 部署后访问 Pages 域名
+
+本地调试可使用：
+
+```bash
+wrangler pages dev .
+```
+
+## 主要文件
+
+- `index.html`：页面与四类功能面板
+- `app.js`：原项目基础功能与兼容逻辑
+- `multi-model.js`：多模型目录、模型切换、自定义模型、自动同步与请求兼容层
+- `styles.css`：页面样式
+- `functions/api/[[path]].js`：Gitee API 代理
+- `functions/dl.js`：下载代理
