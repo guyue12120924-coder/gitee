@@ -2,6 +2,7 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const REGISTRY = window.GiteeModelRegistry;
   const FUNCTION_TASKS = {
     "z-image": { task: "t2i", title: "文生图", sub: "Text to Image", icon: "✦", selectId: "mmT2IModel", panelId: "panelZ", promptId: "zPrompt", buttonId: "btnZRun" },
     "Edit-2511": { task: "edit", title: "图像编辑", sub: "Image Edit", icon: "◐", selectId: "mmEditModel", panelId: "panelEdit", promptId: "editPrompt", buttonId: "btnEditRun" },
@@ -18,10 +19,8 @@
   let composerSlots;
   let previewWorkflow;
   let previewModel;
-  let previewStatus;
   let emptyPreview;
   let outputObserver;
-  let quickModel;
   let drawerMask;
   let openDrawerName = "";
 
@@ -49,19 +48,21 @@
     const right = document.querySelector(".topbar-right");
     if (!right || $("studioTaskBtn")) return;
     const status = right.querySelector(".status");
-    const make = (id, label, drawer, icon) => {
+    const make = (id, label, drawer, icon, extraClass = "") => {
       const button = document.createElement("button");
       button.id = id;
       button.type = "button";
-      button.className = "top-icon-btn studio-top-action";
+      button.className = `top-icon-btn studio-top-action ${extraClass}`.trim();
       button.dataset.drawer = drawer;
+      button.title = label;
+      button.setAttribute("aria-label", label);
       button.innerHTML = `<span class="studio-top-icon">${icon}</span><span>${label}</span>`;
       button.addEventListener("click", () => toggleDrawer(drawer));
       return button;
     };
     const nodes = [
       make("studioTaskBtn", "任务", "tasks", "◷"),
-      make("studioHistoryBtn", "历史", "history", "◫"),
+      make("studioHistoryBtn", "历史", "history", "◫", "studio-history-top-action"),
       make("studioSettingsBtn", "设置", "settings", "⚙"),
     ];
     for (const node of nodes) right.insertBefore(node, status || right.firstChild);
@@ -80,7 +81,8 @@
       drawer.id = `studioDrawer-${name}`;
       drawer.className = `studio-drawer studio-drawer-${name}`;
       drawer.setAttribute("aria-hidden", "true");
-      drawer.innerHTML = `<div class="studio-drawer-head"><div><strong>${title}</strong><span>${name === "tasks" ? "查看当前生成进度" : name === "history" ? "查找和复用历史创作" : "连接、外观与开发设置"}</span></div><button type="button" class="studio-drawer-close" aria-label="关闭">×</button></div><div class="studio-drawer-body" id="studioDrawerBody-${name}"></div>`;
+      const subtitle = name === "tasks" ? "查看当前生成进度" : name === "history" ? "查找和复用历史创作" : "连接、外观与开发设置";
+      drawer.innerHTML = `<div class="studio-drawer-head"><div><strong>${title}</strong><span>${subtitle}</span></div><button type="button" class="studio-drawer-close" aria-label="关闭">×</button></div><div class="studio-drawer-body" id="studioDrawerBody-${name}"></div>`;
       drawer.querySelector(".studio-drawer-close")?.addEventListener("click", closeDrawers);
       document.body.appendChild(drawer);
     }
@@ -101,7 +103,7 @@
     drawer.setAttribute("aria-hidden", "false");
     drawerMask?.classList.add("is-open");
     document.body.classList.add("studio-drawer-open");
-    document.querySelector(`[data-drawer="${name}"]`)?.classList.add("is-active");
+    for (const button of document.querySelectorAll(`[data-drawer="${name}"]`)) button.classList.add("is-active");
   }
 
   function closeDrawers(clearName = true) {
@@ -133,7 +135,7 @@
     inspector = document.createElement("aside");
     inspector.id = "workspaceInspector";
     inspector.className = "workspace-inspector";
-    inspector.innerHTML = `<div class="workspace-inspector-head"><div><span>生成设置</span><strong id="workspaceInspectorTitle">文生图</strong></div><button type="button" class="workspace-inspector-mobile-close" aria-label="关闭参数">×</button></div>`;
+    inspector.innerHTML = `<div class="workspace-inspector-head"><div class="workspace-inspector-title"><span>生成设置</span><strong id="workspaceInspectorTitle">文生图</strong></div><div class="workspace-inspector-head-actions"><span id="workspaceInspectorState" class="workspace-inspector-state">已适配</span><button type="button" class="workspace-inspector-mobile-close" aria-label="关闭参数">×</button></div></div>`;
     inspectorHost = document.createElement("div");
     inspectorHost.id = "workspaceInspectorHost";
     inspectorHost.className = "workspace-inspector-host";
@@ -143,16 +145,8 @@
     composer = document.createElement("section");
     composer.id = "workspaceComposer";
     composer.className = "workspace-composer";
-    composer.innerHTML = `<div class="workspace-composer-top"><div class="workspace-composer-model"><span>模型</span><select id="studioQuickModel" class="studio-quick-model" aria-label="快速选择模型"></select></div><button type="button" class="btn studio-inspector-toggle" id="studioInspectorToggle">参数</button></div><div id="workspaceComposerSlots" class="workspace-composer-slots"></div>`;
+    composer.innerHTML = `<div class="workspace-composer-top"><span class="workspace-composer-caption">描述你的想法</span><button type="button" class="btn studio-inspector-toggle" id="studioInspectorToggle">参数</button></div><div id="workspaceComposerSlots" class="workspace-composer-slots"></div>`;
     composerSlots = composer.querySelector("#workspaceComposerSlots");
-    quickModel = composer.querySelector("#studioQuickModel");
-    quickModel.addEventListener("change", () => {
-      const conf = activeFunction();
-      const select = $(conf.selectId);
-      if (!select || select.value === quickModel.value) return;
-      select.value = quickModel.value;
-      dispatch(select);
-    });
     composer.querySelector("#studioInspectorToggle")?.addEventListener("click", () => document.body.classList.toggle("studio-inspector-open"));
 
     shell.append(rail, canvas, inspector, composer);
@@ -163,10 +157,6 @@
 
   function createRail() {
     if (!rail || rail.childElementCount) return;
-    const logo = document.createElement("div");
-    logo.className = "workspace-rail-mark";
-    logo.textContent = "AI";
-    rail.appendChild(logo);
     const workflows = document.createElement("div");
     workflows.className = "workspace-rail-workflows";
     for (const [value, conf] of Object.entries(FUNCTION_TASKS)) {
@@ -185,17 +175,17 @@
       workflows.appendChild(button);
     }
     rail.appendChild(workflows);
+
     const utility = document.createElement("div");
     utility.className = "workspace-rail-utility";
-    for (const [label, name, icon] of [["任务", "tasks", "◷"], ["历史", "history", "◫"], ["设置", "settings", "⚙"]]) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "workspace-rail-button workspace-rail-utility-button";
-      button.dataset.drawer = name;
-      button.innerHTML = `<span class="workspace-rail-icon">${icon}</span><span class="workspace-rail-label">${label}</span>`;
-      button.addEventListener("click", () => toggleDrawer(name));
-      utility.appendChild(button);
-    }
+    const history = document.createElement("button");
+    history.type = "button";
+    history.className = "workspace-rail-button workspace-rail-utility-button";
+    history.dataset.drawer = "history";
+    history.title = "历史记录";
+    history.innerHTML = `<span class="workspace-rail-icon">◫</span><span class="workspace-rail-label">历史</span>`;
+    history.addEventListener("click", () => toggleDrawer("history"));
+    utility.appendChild(history);
     rail.appendChild(utility);
   }
 
@@ -204,11 +194,24 @@
     const header = document.createElement("div");
     header.id = "workspacePreviewSummary";
     header.className = "workspace-preview-summary";
-    header.innerHTML = `<div class="workspace-preview-title"><span id="workspaceWorkflowValue">文生图</span><strong id="workspaceModelValue">模型加载中</strong></div><div class="workspace-preview-status"><span class="workspace-status-dot"></span><span id="workspaceStatusValue">准备就绪</span></div>`;
+    header.innerHTML = `<div class="workspace-preview-title"><span id="workspaceWorkflowValue">文生图</span><strong id="workspaceModelValue">模型加载中</strong></div><div class="workspace-preview-actions"><button type="button" class="workspace-preview-action" id="studioCompareToggle">对比</button><span class="workspace-preview-clear-host"></span></div>`;
     outputCard.insertBefore(header, outputCard.firstChild);
     previewWorkflow = $("workspaceWorkflowValue");
     previewModel = $("workspaceModelValue");
-    previewStatus = $("workspaceStatusValue");
+
+    const clearButton = $("btnClearOutput");
+    const clearHost = header.querySelector(".workspace-preview-clear-host");
+    if (clearButton && clearHost) {
+      clearButton.classList.add("workspace-preview-action");
+      clearButton.textContent = "清空";
+      clearHost.appendChild(clearButton);
+    }
+    header.querySelector("#studioCompareToggle")?.addEventListener("click", () => {
+      const panel = $("modelComparePanel");
+      if (!panel || panel.hidden) return;
+      panel.open = !panel.open;
+      if (panel.open) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
   }
 
   function createEmptyPreview(outputCard) {
@@ -217,7 +220,7 @@
     emptyPreview = document.createElement("div");
     emptyPreview.id = "workspacePreviewEmpty";
     emptyPreview.className = "workspace-preview-empty";
-    emptyPreview.innerHTML = `<div class="workspace-empty-art"><span>✦</span></div><div><strong>从一个想法开始</strong><p>在下方写下你想生成的内容，选择模型后点击生成。作品会直接出现在这里。</p></div>`;
+    emptyPreview.innerHTML = `<div class="workspace-empty-art"><span>✦</span></div><div><strong>描述你的想法</strong><p>输入 Prompt，然后开始创作。</p></div>`;
     outputCard.insertBefore(emptyPreview, output);
     const sync = () => {
       const items = [...output.querySelectorAll(":scope > .item")];
@@ -295,6 +298,76 @@
     composerSlots?.appendChild(slot);
   }
 
+  function modelStatus(conf) {
+    const select = $(conf.selectId);
+    if (!select || select.value === "__custom__") return { text: "自定义", state: "custom", detail: "使用自定义模型配置" };
+    const health = $(`mmHealth-${conf.task}`)?.textContent?.trim() || "";
+    if (/失败|fail/i.test(health)) return { text: "需检查", state: "fail", detail: health };
+    if (/通过|verified|成功/i.test(health)) return { text: "已验证", state: "pass", detail: health };
+    const model = REGISTRY?.model?.(conf.task, select.value);
+    const state = model?.status?.state || "adapted";
+    if (state === "verified") return { text: "已验证", state: "pass", detail: model?.badge || "稳定模型" };
+    if (state === "experimental") return { text: "实验", state: "experimental", detail: model?.badge || "建议先小规模测试" };
+    return { text: "已适配", state: "adapted", detail: model?.badge || "已接入当前工作流" };
+  }
+
+  function updateModelSummary(conf) {
+    const status = modelStatus(conf);
+    const state = $("workspaceInspectorState");
+    if (state) {
+      state.textContent = status.text;
+      state.className = `workspace-inspector-state is-${status.state}`;
+      state.title = status.detail;
+    }
+    const summary = $(`studioModelSummary-${conf.task}`);
+    if (!summary) return;
+    const model = REGISTRY?.model?.(conf.task, $(conf.selectId)?.value);
+    const strong = summary.querySelector("strong");
+    const span = summary.querySelector("span");
+    if (strong) strong.textContent = currentModelText();
+    if (span) span.textContent = $(conf.selectId)?.value === "__custom__" ? "自定义模型配置" : (model?.badge || status.detail || "Gitee AI 模型");
+  }
+
+  function simplifyInspectorPanel(conf) {
+    const panel = $(conf.panelId);
+    const modelBox = $(conf.selectId)?.closest(".mm-model-box");
+    if (!panel || !modelBox || modelBox.dataset.studioSimplified === "1") return;
+    modelBox.dataset.studioSimplified = "1";
+
+    const pickerGrid = modelBox.querySelector(":scope > .grid2");
+    const picker = pickerGrid?.children?.[0];
+    const technicalNote = pickerGrid?.children?.[1];
+    if (pickerGrid) pickerGrid.classList.add("studio-model-picker-grid");
+    if (picker) {
+      picker.classList.add("studio-model-picker");
+      const label = picker.querySelector(".lab");
+      if (label) label.textContent = "模型";
+    }
+
+    const summary = document.createElement("div");
+    summary.id = `studioModelSummary-${conf.task}`;
+    summary.className = "studio-model-summary";
+    summary.innerHTML = `<div><strong></strong><span></span></div>`;
+    pickerGrid?.insertAdjacentElement("afterend", summary);
+
+    const advanced = document.createElement("details");
+    advanced.className = "studio-model-developer-tools";
+    advanced.innerHTML = `<summary>高级与诊断</summary><div class="studio-model-developer-body"></div>`;
+    const body = advanced.querySelector(".studio-model-developer-body");
+    const endpointDetails = [...modelBox.children].find((node) => node.tagName === "DETAILS" && node !== advanced);
+    const health = modelBox.querySelector(":scope > .mm-health-row");
+    const trial = modelBox.querySelector(":scope > [data-video-trial-notice]");
+    if (technicalNote) {
+      technicalNote.classList.add("studio-model-tech-note");
+      body?.appendChild(technicalNote);
+    }
+    if (endpointDetails) body?.appendChild(endpointDetails);
+    if (health) body?.appendChild(health);
+    if (trial) body?.appendChild(trial);
+    modelBox.appendChild(advanced);
+    updateModelSummary(conf);
+  }
+
   function moveCorePanels() {
     const apiCard = $("apiKey")?.closest(".card");
     const functionCard = $("modelSel")?.closest(".card");
@@ -315,11 +388,11 @@
 
     for (const [value, conf] of Object.entries(FUNCTION_TASKS)) {
       const panel = $(conf.panelId);
-      if (panel) {
-        panel.classList.add("workspace-inspector-panel");
-        inspectorHost.appendChild(panel);
-        prepareComposerSlot(value, conf);
-      }
+      if (!panel) continue;
+      panel.classList.add("workspace-inspector-panel");
+      inspectorHost.appendChild(panel);
+      simplifyInspectorPanel(conf);
+      prepareComposerSlot(value, conf);
     }
 
     outputCard.classList.add("workspace-output-card");
@@ -339,21 +412,6 @@
     if (historyCenter && historyBody && historyCenter.parentElement !== historyBody) historyBody.appendChild(historyCenter);
   }
 
-  function syncQuickModel() {
-    if (!quickModel) return;
-    const conf = activeFunction();
-    const source = $(conf.selectId);
-    if (!source) return;
-    const current = source.value;
-    quickModel.replaceChildren(...[...source.options].map((option) => {
-      const clone = document.createElement("option");
-      clone.value = option.value;
-      clone.textContent = (option.textContent || option.value).replace(/^[✅❌🧪⚙️🟡]\s*/, "");
-      return clone;
-    }));
-    quickModel.value = [...quickModel.options].some((option) => option.value === current) ? current : quickModel.options[0]?.value || "";
-  }
-
   function syncActiveUi() {
     const value = activeValue();
     const conf = activeFunction();
@@ -368,8 +426,9 @@
     if (title) title.textContent = conf.title;
     if (previewWorkflow) previewWorkflow.textContent = conf.title;
     if (previewModel) previewModel.textContent = currentModelText();
-    if (previewStatus) previewStatus.textContent = $("statusBadge")?.textContent?.trim() || "准备就绪";
-    syncQuickModel();
+    const compareButton = $("studioCompareToggle");
+    if (compareButton) compareButton.hidden = conf.task !== "t2i";
+    updateModelSummary(conf);
   }
 
   function bindState() {
@@ -377,9 +436,9 @@
     for (const conf of Object.values(FUNCTION_TASKS)) {
       $(conf.selectId)?.addEventListener("change", () => setTimeout(syncActiveUi, 0));
       $(`mm-${conf.task}-custom-id`)?.addEventListener("input", syncActiveUi);
+      const health = $(`mmHealth-${conf.task}`);
+      if (health) new MutationObserver(() => updateModelSummary(conf)).observe(health, { childList: true, subtree: true, characterData: true });
     }
-    const badge = $("statusBadge");
-    if (badge) new MutationObserver(syncActiveUi).observe(badge, { childList: true, subtree: true, characterData: true });
     const container = document.querySelector("main.container");
     if (container) new MutationObserver(adoptUtilityPanels).observe(container, { childList: true });
   }
