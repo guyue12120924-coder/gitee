@@ -51,6 +51,7 @@
   }
 }
 body { background: var(--bg) !important; }
+body.studio-drawer-open { overflow: hidden; }
 
 /* ===== Studio convenience layer ===== */
 .topbar-right > a[href*="github.com"],
