@@ -69,9 +69,11 @@ function isAllowedTarget(url) {
   if (!(url instanceof URL) || url.protocol !== "https:") return false;
   const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return false;
-  if (host === "0.0.0.0" || host === "::" || host === "::1") return false;
+  // Result URLs are expected to use normal public hostnames. Blocking literal IPv6
+  // avoids loopback, mapped-IPv4, ULA and link-local forms without relying on DNS.
+  if (host.includes(":")) return false;
+  if (host === "0.0.0.0") return false;
   if (isPrivateIpv4(host)) return false;
-  if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")) return false;
   return true;
 }
 
