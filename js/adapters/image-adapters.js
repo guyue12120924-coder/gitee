@@ -50,6 +50,9 @@
     defaultEndpoint: "images/generations",
     allowBatch: false,
     ui: { sizes: QWEN_SIZES, note: "自动使用 Qwen 原生分辨率桶，并转换为 1328*1328 / 1664*928 等格式" },
+    parameters: [
+      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: QWEN_SIZES, help: "Qwen 使用原生尺寸桶；实际请求会自动转换为模型接受的格式。" }
+    ],
     jsonVariants(body) {
       const bucket = nearestBucket(splitSize(body.size));
       const nativeSize = { ...body, size: `${bucket.width}*${bucket.height}` };
@@ -65,6 +68,10 @@
     defaultEndpoint: "images/generations",
     allowBatch: true,
     ui: { sizes: Z_SIZES, note: "沿用已验证的 OpenAI 风格 size=1024x1024" },
+    parameters: [
+      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: Z_SIZES },
+      { key: "count", label: "生成张数", type: "number", sourceId: "zN", min: 1, max: 4, step: 1, default: 1, help: "z-image 支持一次生成 1–4 张。" }
+    ],
     jsonVariants(body) { return [{ ...body }]; }
   });
 
@@ -73,6 +80,9 @@
     defaultEndpoint: "images/generations",
     allowBatch: false,
     ui: { sizes: COMMON_SIZES, note: "先用标准 size，参数不兼容时自动尝试精简/宽高格式" },
+    parameters: [
+      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: COMMON_SIZES, help: "为提高跨模型兼容性，通用模型默认一次生成 1 张。" }
+    ],
     jsonVariants(body) {
       const parsed = splitSize(body.size);
       const noN = { ...body }; delete noN.n;
@@ -86,6 +96,32 @@
     }
   });
 
-  hub.register("qwen-edit", { task: "edit", defaultEndpoint: "async/images/edits", uiProfile: "qwen" });
-  hub.register("generic-edit", { task: "edit", defaultEndpoint: "async/images/edits", uiProfile: "standard" });
+  hub.register("qwen-edit", {
+    task: "edit",
+    defaultEndpoint: "async/images/edits",
+    uiProfile: "qwen",
+    parameters: [
+      {
+        key: "taskTypes",
+        label: "任务类型 Task Types",
+        type: "checkbox-group",
+        sourceName: "editTaskType",
+        options: ["id", "style", "pose", "layout", "color", "background"],
+        span: "full",
+        help: "可多选；保持与 Qwen 编辑接口的 task_types 一致。"
+      },
+      { key: "steps", label: "推理步数", type: "number", sourceId: "editSteps", min: 1, max: 50, step: 1, default: 4 },
+      { key: "guidance", label: "Guidance Scale", type: "number", sourceId: "editGuidance", min: 0, max: 10, step: 0.5, default: 1 },
+      { key: "openUrl", label: "完成后打开 file_url", type: "checkbox", sourceId: "editOpenUrl", advanced: true }
+    ]
+  });
+
+  hub.register("generic-edit", {
+    task: "edit",
+    defaultEndpoint: "async/images/edits",
+    uiProfile: "standard",
+    parameters: [
+      { key: "openUrl", label: "完成后打开 file_url", type: "checkbox", sourceId: "editOpenUrl" }
+    ]
+  });
 })();
