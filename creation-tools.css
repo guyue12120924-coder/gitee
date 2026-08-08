@@ -1,0 +1,153 @@
+/* ===== Final stage: prompt tools & model comparison ===== */
+.prompt-toolbox {
+  margin: 8px 0 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  background: rgba(128,128,128,.035);
+}
+.prompt-toolbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.prompt-toolbox-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.prompt-toolbox-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.prompt-toolbox .btn {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.prompt-template-bank {
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 9px;
+}
+.prompt-template-bank.is-open { display: grid; }
+.prompt-template {
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--btn-bg);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+}
+.prompt-template:hover {
+  border-color: rgba(79,124,255,.55);
+  background: rgba(79,124,255,.08);
+}
+.prompt-template strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+.prompt-template span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.prompt-toolbox-note {
+  display: none;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.prompt-toolbox-note.is-visible { display: block; }
+
+.model-compare-panel {
+  margin: 0 0 14px;
+  padding: 13px;
+  border: 1px solid rgba(79,124,255,.20);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(79,124,255,.06), rgba(37,194,160,.035));
+}
+.model-compare-panel[hidden] { display: none; }
+.model-compare-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.model-compare-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+.model-compare-sub {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.model-compare-models {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.model-compare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  background: var(--btn-bg);
+  font-size: 10px;
+  cursor: pointer;
+}
+.model-compare-chip input { accent-color: var(--accent); }
+.model-compare-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.model-compare-status {
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.model-compare-status strong { color: var(--text); }
+.model-compare-running {
+  pointer-events: none;
+  opacity: .65;
+}
+.compare-result-item {
+  box-shadow: inset 0 0 0 1px rgba(79,124,255,.22);
+}
+.compare-result-item::before {
+  content: "MODEL COMPARE";
+  display: inline-block;
+  margin-bottom: 7px;
+  color: var(--accent2);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+@media (max-width: 620px) {
+  .prompt-template-bank { grid-template-columns: 1fr; }
+  .model-compare-footer { align-items: stretch; }
+  .model-compare-footer .btn { width: 100%; }
+}
