@@ -38,7 +38,7 @@ const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== i
 if (duplicateIds.length) failures.push(`Duplicate static HTML ids: ${duplicateIds.join(", ")}`);
 notes.push(`checked ${ids.length} static HTML ids`);
 
-for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css"]) {
+for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css", "workflow-polish.css"]) {
   if (!html.includes(`href="./${stylesheet}"`)) failures.push(`Missing stylesheet in index.html: ${stylesheet}`);
 }
 
@@ -59,6 +59,7 @@ const requiredOrder = [
   "js/ui/creation-tools.js",
   "js/ui/studio-extras.js",
   "js/ui/product-polish.js",
+  "js/ui/workflow-polish.js",
 ];
 let previous = -1;
 for (const file of requiredOrder) {
@@ -114,6 +115,21 @@ if (!productUi.includes("studio-gallery-two")) failures.push("Two-result gallery
 if (!productUi.includes("moark_theme_mode")) failures.push("Settings must persist system/light/dark appearance mode");
 if (!productUi.includes("REGISTRY?.model")) failures.push("Custom model picker must read model metadata from Registry");
 if (!productUi.includes("studio-download-action")) failures.push("Gallery overlay must preserve direct download access");
+
+const workflowCss = fs.readFileSync(path.join(root, "workflow-polish.css"), "utf8");
+for (const marker of [".studio-upload-card", ".studio-human-duration", ".studio-friendly-options", ".studio-technical-primary-hidden", ".workspace-ready .global-loading"]) {
+  if (!workflowCss.includes(marker)) failures.push(`Workflow polish CSS marker missing: ${marker}`);
+}
+if (!workflowCss.includes("grid-row: 1 / 3")) failures.push("Desktop Inspector must span the Canvas and Composer rows");
+if (!workflowCss.includes("grid-column: 2 !important")) failures.push("Desktop Composer must stay under Canvas only");
+
+const workflowUi = fs.readFileSync(path.join(root, "js/ui/workflow-polish.js"), "utf8");
+for (const marker of ["reorderWorkflowInputs", "ensureHunyuanDuration", "ensureWanFormatControls", "setupWorkflowOutputViews", "setupTaskButtonProgress"]) {
+  if (!workflowUi.includes(marker)) failures.push(`Workflow polish behavior missing: ${marker}`);
+}
+if (!workflowUi.includes('item.dataset.studioWorkflow')) failures.push("Output items must be assigned to a workflow-specific Canvas view");
+if (!workflowUi.includes('new MutationObserver') || !workflowUi.includes('observe(output, { childList: true })')) failures.push("Output view observer must stay child-list-only to avoid feedback loops");
+if (workflowUi.includes('observe($("workspaceInspectorHost")') || workflowUi.includes('observe(document.body, { childList: true, subtree: true })')) failures.push("Workflow polish must not add broad subtree observers");
 
 const taskTracker = fs.readFileSync(path.join(root, "js/runtime/task-tracker.js"), "utf8");
 if (!taskTracker.includes("if (!run || run.finishedAt) return;")) failures.push("Task tracker must ignore updates after terminal state");
