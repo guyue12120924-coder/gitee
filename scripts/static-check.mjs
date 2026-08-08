@@ -130,6 +130,11 @@ if (!studioExtras.includes("DataTransfer")) failures.push("Generated image reuse
 if (!studioExtras.includes("ctrlKey") || !studioExtras.includes("metaKey")) failures.push("Creator keyboard shortcut support is missing");
 if (!studioExtras.includes("studioTaskBtn")) failures.push("Compact task badge support is missing");
 if (!studioExtras.includes("setupPromptAutosize")) failures.push("Prompt composer auto-resize is missing");
+if (!studioExtras.includes("CHOICE_KEYS")) failures.push("Inspector ratio/resolution choice controls are missing");
+if (!studioExtras.includes("studio-choice-grid")) failures.push("Inspector visual choice grid is missing");
+if (!studioExtras.includes("decorateCountStepper")) failures.push("Image count stepper is missing");
+if (!studioExtras.includes("studio-primary-params") || !studioExtras.includes("studio-advanced-params")) failures.push("Basic and advanced parameter layers are missing");
+if (!studioExtras.includes("开发者设置")) failures.push("Developer-only settings layer is missing");
 
 const downloadProxy = fs.readFileSync(path.join(root, "functions/dl.js"), "utf8");
 if (!downloadProxy.includes('url.protocol !== "https:"')) failures.push("Download proxy must require HTTPS targets");
