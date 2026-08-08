@@ -10,8 +10,15 @@ export async function onRequest(context) {
   if (!contentType.includes("text/html")) return response;
 
   let html = await response.text();
-  if (!html.includes("model-workbench.js")) {
-    html = html.replace("</body>", "  <script src=\"./model-workbench.js\"></script>\n</body>");
+  const scripts = [
+    "model-workbench.js",
+    "video-duration-fix.js",
+  ];
+
+  for (const script of scripts) {
+    if (!html.includes(script)) {
+      html = html.replace("</body>", `  <script src="./${script}"></script>\n</body>`);
+    }
   }
 
   const headers = new Headers(response.headers);
