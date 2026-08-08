@@ -149,7 +149,7 @@
   min-height: 620px;
   margin: 0 !important;
 }
-.workspace-output-card > .row:first-child {
+.workspace-output-card > .row.row-between {
   position: sticky;
   top: 118px;
   z-index: 4;
@@ -265,7 +265,7 @@
   }
   .workspace-main { margin-top: 14px; }
   .workspace-output-card { min-height: 420px; }
-  .workspace-output-card > .row:first-child { position: static; }
+  .workspace-output-card > .row.row-between { position: static; }
   .workspace-preview-empty { min-height: 280px; }
   .workspace-ready .global-loading { right: 12px; bottom: 12px; }
 }
