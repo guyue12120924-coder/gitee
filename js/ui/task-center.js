@@ -127,6 +127,26 @@
     }).join("");
   }
 
+  async function retryRun(run) {
+    const store = window.GiteeHistoryStore;
+    const historyCenter = window.GiteeHistoryCenter;
+    let record = null;
+    if (store?.get && historyCenter?.restoreRecord) {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      try { record = await store.get(run.id); } catch {}
+      if (record) await historyCenter.restoreRecord(record);
+    }
+
+    const button = $(BUTTON_IDS[run.task]);
+    button?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (["edit", "i2v"].includes(run.task)) {
+      window.alert("已恢复该任务的模型、Prompt 和参数。浏览器不能自动恢复本地图片，请重新上传图片后再点击生成。");
+      return;
+    }
+    if (run.task === "t2v" && !window.confirm("将重新提交文生视频任务，可能消耗体验额度或产生费用。是否继续？")) return;
+    setTimeout(() => button?.click(), 180);
+  }
+
   function card(run) {
     const elapsed = (run.finishedAt || Date.now()) - run.startedAt;
     const pct = progress(run);
@@ -169,27 +189,13 @@
     `;
 
     el.querySelector(".tc-stop")?.addEventListener("click", () => TRACKER.requestCancel(run.id));
-    el.querySelector(".tc-retry")?.addEventListener("click", () => {
-      const button = $(BUTTON_IDS[run.task]);
-      button?.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => button?.click(), 250);
-    });
+    el.querySelector(".tc-retry")?.addEventListener("click", () => retryRun(run));
     el.querySelector(".tc-copy-task")?.addEventListener("click", () => copyText(run.taskId));
     el.querySelector(".tc-copy-error")?.addEventListener("click", () => copyText(rawText(run)));
     return el;
   }
 
-  function render() {
-    if (!listEl) return;
-    const runs = TRACKER.list().slice(0, 10);
-    listEl.innerHTML = "";
-    emptyEl.style.display = runs.length ? "none" : "block";
-    for (const run of runs) listEl.appendChild(card(run));
-  }
-
   function clearFinished() {
-    // Tracker intentionally keeps run state in memory. The UI can hide completed
-    // cards without mutating the tracker by marking their DOM ids for this page.
     const ids = TRACKER.list().filter((run) => run.finishedAt).map((run) => run.id);
     try { sessionStorage.setItem("moark_task_center_hidden", JSON.stringify(ids)); } catch {}
     renderFiltered();
