@@ -113,6 +113,12 @@
 }
 .studio-upload-card.has-file .studio-upload-clear { display: inline-flex; align-items: center; }
 .studio-upload-clear:hover { color: var(--text); }
+.studio-upload-stack {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.studio-upload-stack .studio-upload-field { margin: 0 !important; }
 
 /* ===== Secondary prompt fields ===== */
 .studio-secondary-field {
@@ -161,6 +167,67 @@
   cursor: pointer;
 }
 .studio-duration-button:hover { background: var(--btn-bg); color: var(--text); }
+.studio-human-duration {
+  display: grid;
+  grid-template-columns: 38px minmax(72px,1fr) 38px;
+  width: min(190px,100%);
+  height: 40px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--input-bg);
+}
+.studio-human-duration button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.studio-human-duration button:hover { background: var(--btn-bg); color: var(--text); }
+.studio-human-duration strong {
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-size: 13px;
+}
+.studio-duration-help {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.studio-technical-primary-hidden { display: none !important; }
+
+/* Wan presents creator-friendly ratio + quality instead of raw dimensions/preset strings. */
+.studio-wan-format-field {
+  display: grid;
+  gap: 12px;
+}
+.studio-friendly-control { display: grid; gap: 6px; }
+.studio-friendly-options {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 6px;
+}
+.studio-friendly-option {
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--studio-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .15s ease;
+}
+.studio-friendly-option:hover { border-color: rgba(99,102,241,.30); color: var(--text); }
+.studio-friendly-option.is-active {
+  border-color: rgba(99,102,241,.44);
+  background: rgba(99,102,241,.10);
+  color: var(--accent);
+}
 
 /* Cleaner checkbox chips for edit task types. */
 .workspace-inspector .mp-checks { gap: 6px !important; }
@@ -176,6 +243,86 @@
   border-color: rgba(99,102,241,.34);
   background: rgba(99,102,241,.09);
   color: var(--accent);
+}
+
+/* ===== Canvas ownership and hierarchy ===== */
+.studio-model-summary { display: none !important; }
+.studio-model-developer-tools {
+  margin: 12px 2px 0 !important;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+.workspace-output-card .output > .item[hidden] { display: none !important; }
+.studio-media-card > h3,
+.studio-media-card > .meta { display: none !important; }
+.studio-media-native-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 8;
+  margin: 0 !important;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.studio-media-card:hover .studio-media-native-actions,
+.studio-media-card:focus-within .studio-media-native-actions,
+.studio-media-native-actions[open] { opacity: 1; }
+.studio-media-native-actions > summary {
+  display: grid;
+  width: 30px !important;
+  height: 30px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 9px;
+  background: rgba(18,18,22,.58);
+  color: transparent;
+  font-size: 0 !important;
+  backdrop-filter: blur(10px);
+}
+.studio-media-native-actions > summary::after {
+  content: "•••";
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+.studio-media-native-actions > .studio-media-native-body {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: max-content;
+  max-width: min(320px,70vw);
+  padding: 7px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+  box-shadow: 0 12px 30px rgba(0,0,0,.16);
+}
+
+/* Persistent progress belongs to the generate button + Task drawer, not a global toast. */
+.studio-topbar .status,
+.workspace-ready .global-loading { display: none !important; }
+.workspace-generate-button.is-generating,
+.workspace-generate-button:disabled {
+  cursor: progress;
+  opacity: .82;
+}
+
+/* Desktop: Inspector is a full-height independent rail; Composer belongs only to Canvas. */
+@media (min-width: 901px) {
+  .workspace-inspector {
+    grid-column: 3 !important;
+    grid-row: 1 / 3 !important;
+    align-self: stretch !important;
+  }
+  .workspace-inspector-host {
+    height: calc(100% - 56px) !important;
+    max-height: none !important;
+  }
+  .workspace-composer {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
 }
 
 /* ===== Final interaction rhythm ===== */
@@ -208,7 +355,6 @@
   .workspace-inspector-head { min-height: 52px !important; }
   .workspace-inspector-host { max-height: calc(78dvh - 52px) !important; padding: 10px 11px 16px !important; }
 
-  /* On mobile the parameter button must remain reachable even though desktop composer caption is hidden. */
   .workspace-composer-top {
     display: flex !important;
     min-height: 28px;
@@ -231,6 +377,7 @@
   .studio-upload-icon { width: 34px; height: 34px; }
   .studio-upload-preview { max-height: 180px !important; }
   .studio-upload-preview img { max-height: 180px !important; }
+  .studio-media-native-actions { opacity: 1; }
 }
 
 @media (max-width: 560px) {
@@ -242,7 +389,8 @@
   .workspace-preview-title > strong { font-size: 10px !important; }
   .workspace-composer-slot { grid-template-columns: minmax(0,1fr) 82px !important; }
   .workspace-generate-button { width: 82px !important; min-width: 82px !important; padding: 0 8px !important; }
-  .studio-choice-grid { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
+  .studio-choice-grid,
+  .studio-friendly-options { grid-template-columns: repeat(2,minmax(0,1fr)) !important; }
   .studio-upload-copy span { white-space: normal; }
 }
 
@@ -254,5 +402,6 @@
   .studio-choice-button,
   .studio-settings-link,
   .studio-theme-choice,
-  .studio-upload-card { transition: none !important; }
+  .studio-upload-card,
+  .studio-friendly-option { transition: none !important; }
 }
