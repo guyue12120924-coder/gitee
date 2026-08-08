@@ -102,6 +102,26 @@
   function imageB64FromResponse(j) { return j?.data?.[0]?.b64_json || j?.images?.[0]?.b64_json || null; }
   function videoUrlFromResponse(j) { return j?.output?.file_url || j?.output?.video_url || j?.output?.url || j?.data?.[0]?.url || j?.video?.url || null; }
 
+  function responseMessage(j) {
+    if (!j) return "";
+    if (typeof j === "string") return j;
+    return String(j?.message || j?.error?.message || j?.error || j?.detail || j?._text || "");
+  }
+
+  function isSafeCompatibilityRetry(res, j) {
+    if (!res || res.ok) return false;
+    if (![400, 404, 405, 415, 422].includes(res.status)) return false;
+    const text = responseMessage(j).toLowerCase();
+    if (!text) return true;
+    return /参数|parameter|invalid|unsupported|unknown|missing|required|field|format|multipart|json|image|first_frame|image_url|size|resolution|duration|ratio|aspect|endpoint|method|not found|media type/.test(text);
+  }
+
+  function acceptedWithoutRecognizedResult(model, kind, last) {
+    const code = last?.res?.status || "2xx";
+    const endpoint = last?.endpoint || model.endpoint || "当前 Endpoint";
+    return new Error(`${model.label} 已收到 HTTP ${code} 成功响应（${endpoint}），但返回中没有识别到 task_id 或${kind}结果。为避免重复提交并产生多个任务，已停止自动重试。请在“原始响应 / 调试信息”中查看实际返回结构。`);
+  }
+
   function resolveAdapter(task, model) { return ADAPTERS.get(model?.adapter) || ADAPTERS.forModel(task, model?.id); }
 
   function currentModel(task) {
@@ -251,8 +271,9 @@
     status(`${model.label} 创建编辑任务…`);
     for (const endpoint of endpoints) {
       const res = await apiFetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: buildEditForm(model, f1, f2, prompt, extra) });
-      const j = await readJson(res); last = { res, j, endpoint };
-      if (res.ok && (j.task_id || imageUrlFromResponse(j) || imageB64FromResponse(j))) break;
+      const j = await readJson(res);
+      last = { res, j, endpoint, retryable: isSafeCompatibilityRetry(res, j) };
+      if (res.ok || !last.retryable) break;
     }
     if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
     let raw = last.j;
@@ -260,7 +281,7 @@
     let objectUrl; const fileUrl = imageUrlFromResponse(raw), b64 = imageB64FromResponse(raw);
     if (fileUrl) objectUrl = (await fetchBlob(fileUrl)).url;
     else if (b64) { const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" })); }
-    else throw new Error("编辑成功响应中没有图片 URL / b64 数据");
+    else throw acceptedWithoutRecognizedResult(model, "图片", last);
     const img = document.createElement("img"); img.src = objectUrl;
     addOutput({ title: `${model.label} · 图像编辑输出`, meta: `实际模型=${model.id} · Adapter=${model.adapter || "custom"} · endpoint=${last.endpoint}`, raw, element: img, download: { href: objectUrl, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.png` }, openUrl: $("editOpenUrl")?.checked ? fileUrl : null });
     status(`${model.label} 编辑成功`, "ok");
@@ -306,21 +327,23 @@
     for (const a of formAttempts) {
       const sig = `${a.endpoint}:${a.mode}`; if (seen.has(sig)) continue; seen.add(sig);
       const res = await apiFetch(a.endpoint, { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: buildI2VForm(model, image, prompt, extra, a.mode) });
-      const j = await readJson(res); last = { res, j, endpoint: a.endpoint, strategy: `multipart/${a.mode}` };
-      if (res.ok && (j.task_id || videoUrlFromResponse(j))) break;
+      const j = await readJson(res);
+      last = { res, j, endpoint: a.endpoint, strategy: `multipart/${a.mode}`, retryable: isSafeCompatibilityRetry(res, j) };
+      if (res.ok || !last.retryable) break;
     }
-    if (!(last?.res?.ok && (last.j.task_id || videoUrlFromResponse(last.j)))) {
+    if (last && !last.res.ok && last.retryable) {
       for (const imageField of ["image", "first_frame"]) {
         const endpoint = model.endpoint || "async/videos/image-to-video", body = await buildI2VJson(model, image, prompt, extra, imageField);
         const res = await apiFetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        const j = await readJson(res); last = { res, j, endpoint, strategy: `json/${imageField}` };
-        if (res.ok && (j.task_id || videoUrlFromResponse(j))) break;
+        const j = await readJson(res);
+        last = { res, j, endpoint, strategy: `json/${imageField}`, retryable: isSafeCompatibilityRetry(res, j) };
+        if (res.ok || !last.retryable) break;
       }
     }
     if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
     let raw = last.j;
     if (!videoUrlFromResponse(raw) && raw.task_id) { const result = await pollTask(raw.task_id, key); if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`); raw = result.raw; }
-    const fileUrl = videoUrlFromResponse(raw); if (!fileUrl) throw new Error("任务成功但没有视频 file_url/video_url");
+    const fileUrl = videoUrlFromResponse(raw); if (!fileUrl) throw acceptedWithoutRecognizedResult(model, "视频", last);
     const dl = await fetchBlob(fileUrl), video = document.createElement("video"); video.src = dl.url; video.controls = true; video.playsInline = true;
     addOutput({ title: `${model.label} · 图生视频输出`, meta: `实际模型=${model.id} · Adapter=${model.adapter || "custom"} · endpoint=${last.endpoint} · 请求策略=${last.strategy}`, raw, element: video, download: { href: dl.url, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.mp4` }, openUrl: $("wanOpenUrl")?.checked ? fileUrl : null });
     status(`${model.label} 视频生成成功`, "ok");
@@ -342,11 +365,13 @@
     let last = null; status(`${model.label} 创建文生视频任务…`);
     outer: for (const endpoint of endpoints) for (const body of bodies) {
       const res = await apiFetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const j = await readJson(res); last = { res, j, body, endpoint }; if (res.ok && (j.task_id || videoUrlFromResponse(j))) break outer;
+      const j = await readJson(res);
+      last = { res, j, body, endpoint, retryable: isSafeCompatibilityRetry(res, j) };
+      if (res.ok || !last.retryable) break outer;
     }
     if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
     let raw = last.j; if (!videoUrlFromResponse(raw) && raw.task_id) { const result = await pollTask(raw.task_id, key); if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`); raw = result.raw; }
-    const fileUrl = videoUrlFromResponse(raw); if (!fileUrl) throw new Error("任务成功但没有视频 file_url/video_url");
+    const fileUrl = videoUrlFromResponse(raw); if (!fileUrl) throw acceptedWithoutRecognizedResult(model, "视频", last);
     const dl = await fetchBlob(fileUrl), video = document.createElement("video"); video.src = dl.url; video.controls = true; video.playsInline = true;
     addOutput({ title: `${model.label} · 文生视频输出`, meta: `实际模型=${model.id} · Adapter=${model.adapter || "custom"} · endpoint=${last.endpoint}`, raw, element: video, download: { href: dl.url, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.mp4` }, openUrl: $("hyOpenUrl")?.checked ? fileUrl : null });
     status(`${model.label} 视频生成成功`, "ok");
