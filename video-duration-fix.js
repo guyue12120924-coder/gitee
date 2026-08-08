@@ -3,6 +3,10 @@
 
   const $ = (id) => document.getElementById(id);
 
+  // Ranges confirmed by Gitee errors from real I2V requests. The same Vidu /
+  // HappyHorse / Wan2.7 model families use the same safe minimum when selected
+  // in the generic T2V flow, preventing the diagnostic button from submitting
+  // the old invalid 1-second request.
   const DURATION_RULES = {
     "ViduQ3-Pro": { min: 5, max: 16, recommended: 5 },
     "ViduQ3-Turbo": { min: 5, max: 16, recommended: 5 },
@@ -15,30 +19,47 @@
 
   const AFFECTED_MODELS = Object.keys(DURATION_RULES);
 
-  function currentModel() {
-    return $("mmI2VModel")?.value || "";
-  }
-
   function clamp(value, min, max) {
     const n = Number.parseFloat(value);
     if (!Number.isFinite(n)) return min;
     return Math.max(min, Math.min(max, n));
   }
 
-  function updateHint(modelId, rule) {
-    const controls = $("mmI2VGenericControls");
-    const hint = controls?.querySelector(".hint");
-    if (!hint || !rule) return;
-    hint.textContent = `${modelId} 时长范围：${rule.min}–${rule.max} 秒；推荐先用 ${rule.recommended} 秒测试。程序会在提交前自动校正非法时长。`;
+  function currentModel(task) {
+    return $(task === "i2v" ? "mmI2VModel" : "mmT2VModel")?.value || "";
   }
 
-  function applyDurationRule({ forceRecommended = false } = {}) {
-    const modelId = currentModel();
+  function durationInput(task) {
+    return $(task === "i2v" ? "mmI2VDuration" : "mmT2VDuration");
+  }
+
+  function updateHint(task, modelId, rule) {
+    const controls = task === "i2v"
+      ? $("mmI2VGenericControls")
+      : $("mmT2VDuration")?.closest(".grid2");
+    const hint = task === "i2v"
+      ? controls?.querySelector(".hint")
+      : $("mm-t2v-note");
+    if (!rule) return;
+
+    const text = `${modelId} 时长范围：${rule.min}–${rule.max} 秒；推荐先用 ${rule.recommended} 秒测试。程序会在提交前自动校正非法时长。`;
+    if (hint) {
+      if (task === "t2v") {
+        const base = hint.textContent.split(" · 时长适配：")[0];
+        hint.textContent = `${base} · 时长适配：${text}`;
+      } else {
+        hint.textContent = text;
+      }
+    }
+  }
+
+  function applyDurationRule(task, { forceRecommended = false } = {}) {
+    const modelId = currentModel(task);
     const rule = DURATION_RULES[modelId];
     if (!rule) return;
 
-    const genericDuration = $("mmI2VDuration");
-    const legacyDuration = $("wanDuration");
+    const genericDuration = durationInput(task);
+    const legacyDuration = task === "i2v" ? $("wanDuration") : null;
 
     if (genericDuration) {
       genericDuration.min = String(rule.min);
@@ -58,58 +79,63 @@
     if (genericDuration) genericDuration.value = String(validDuration);
     if (legacyDuration) legacyDuration.value = String(validDuration);
 
-    updateHint(modelId, rule);
+    updateHint(task, modelId, rule);
   }
 
   function clearFalseDurationFailuresOnce() {
-    const migrationKey = "moark_i2v_duration_validation_fix_v1";
+    const migrationKey = "moark_video_duration_validation_fix_v2";
     try {
       if (localStorage.getItem(migrationKey) === "1") return;
-      for (const modelId of AFFECTED_MODELS) {
-        const key = `moark_model_health_v1:i2v:${modelId}`;
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        try {
-          const parsed = JSON.parse(raw);
-          if (parsed?.state === "fail" && /duration|时长|参数范围/i.test(parsed?.detail || "")) {
-            localStorage.removeItem(key);
-          }
-        } catch {}
+      for (const task of ["i2v", "t2v"]) {
+        for (const modelId of AFFECTED_MODELS) {
+          const key = `moark_model_health_v1:${task}:${modelId}`;
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.state === "fail" && /duration|时长|参数范围/i.test(parsed?.detail || "")) {
+              localStorage.removeItem(key);
+            }
+          } catch {}
+        }
       }
       localStorage.setItem(migrationKey, "1");
     } catch {}
   }
 
-  function wrapI2VRunButton() {
-    const button = $("btnWanRun");
+  function wrapRunButton(task) {
+    const button = $(task === "i2v" ? "btnWanRun" : "btnHyRun");
     if (!button || typeof button.onclick !== "function" || button.dataset.durationFixWrapped === "1") return;
     const original = button.onclick;
     button.dataset.durationFixWrapped = "1";
     button.onclick = async function (event) {
-      applyDurationRule();
+      applyDurationRule(task);
       return await original.call(this, event);
     };
   }
 
-  function bindModelChanges() {
-    const sel = $("mmI2VModel");
+  function bindModelChanges(task) {
+    const sel = $(task === "i2v" ? "mmI2VModel" : "mmT2VModel");
     if (!sel || sel.dataset.durationFixBound === "1") return;
     sel.dataset.durationFixBound = "1";
     sel.addEventListener("change", () => {
-      const rule = DURATION_RULES[currentModel()];
-      if (rule) applyDurationRule({ forceRecommended: true });
+      const rule = DURATION_RULES[currentModel(task)];
+      if (rule) applyDurationRule(task, { forceRecommended: true });
     });
   }
 
   window.addEventListener("DOMContentLoaded", () => {
     clearFalseDurationFailuresOnce();
-    bindModelChanges();
-    applyDurationRule();
-    wrapI2VRunButton();
 
-    // Refresh the health/status UI after removing false failures created by
-    // the previous 1-second diagnostic request.
-    const sel = $("mmI2VModel");
-    if (sel) sel.dispatchEvent(new Event("change"));
+    for (const task of ["i2v", "t2v"]) {
+      bindModelChanges(task);
+      applyDurationRule(task);
+      wrapRunButton(task);
+    }
+
+    // Refresh health/status UI after removing false failures created by old
+    // 1-second diagnostics.
+    $("mmI2VModel")?.dispatchEvent(new Event("change"));
+    $("mmT2VModel")?.dispatchEvent(new Event("change"));
   });
 })();
