@@ -53,23 +53,41 @@
 
 ### 图生视频
 
-- ViduQ3-Pro（兼容尝试）
-- ViduQ2-Pro（兼容尝试）
-- ViduQ3-Turbo（兼容尝试）
-- ViduQ2-Turbo（兼容尝试）
+当前普通图生视频下拉框按 Gitee 视频生成页进行精选，优先保留页面可体验且更适合作为通用 I2V 的模型。
+
+**推荐体验**
+
+- ViduQ3-Pro
+- ViduQ3-Turbo
+- ViduQ2-Pro
+- HappyHorse-1.1
+- Wan2.7
 - Wan2_2-I2V-A14B（原项目已验证）
-- HappyHorse-1.0（兼容尝试）
-- LTX-2（兼容尝试）
-- Wan2.7（兼容尝试；若 Gitee 页面展示的实际 model ID 不同，请用自定义模型覆盖）
+- LTX-2
+
+**备选**
+
+- ViduQ2-Turbo
+- HappyHorse-1.0
 
 ### 文生视频
 
+**推荐体验**
+
 - HunyuanVideo-1.5（原项目已验证）
+- ViduQ3-Pro
+- ViduQ3-Turbo
+- Wan2.7
 - Wan2.1-T2V-14B
-- ViduQ3-Pro（兼容尝试）
-- ViduQ3-Turbo（兼容尝试）
-- LTX-2（兼容尝试）
-- Wan2.7（兼容尝试；若 Gitee 页面展示的实际 model ID 不同，请用自定义模型覆盖）
+- LTX-2
+
+**备选**
+
+- HappyHorse-1.1
+
+`Duix-Avatar`、`InfiniteTalk`、`Duix.Heygem` 等更偏数字人或音频驱动视频，不放入普通图生视频 / 文生视频下拉框。后续若需要，可单独增加“数字人视频”工作流。
+
+> 上述视频模型来自当前 Gitee 视频生成页，页面通常提供免费体验。通过本工具直接调用 API 时，是否消耗体验额度或产生费用仍以 Gitee 当前账户与 API 规则为准。
 
 > Gitee AI 的模型上下线、精确 model ID、参数和 API Endpoint 可能随平台更新变化。项目提供“自定义模型”、Endpoint 覆盖和附加 JSON 参数，便于直接适配新模型。
 
@@ -101,7 +119,7 @@ Cloudflare Pages Function
 GET https://ai.gitee.com/v1/models
 ```
 
-Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。
+Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。视频下拉框会继续以项目的精选清单为准，避免自动同步把数字人或不适配普通 I2V/T2V 的模型混入列表。
 
 ## 自定义模型
 
@@ -148,6 +166,7 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 - `functions/api/[[path]].js`：代理 Gitee AI `/v1/*`
 - `functions/dl.js`：代理图片 / 视频下载
+- `functions/_middleware.js`：给首页注入模型工作台、视频参数修复与精选视频目录脚本
 
 部署步骤：
 
@@ -167,6 +186,10 @@ wrangler pages dev .
 - `index.html`：页面与四类功能面板
 - `app.js`：原项目基础功能
 - `multi-model.js`：多模型目录、模型切换、自定义模型、实验性模型同步与请求兼容层
+- `multi-model-hotfix.js`：模型参数适配与稳定性修复
+- `model-workbench.js`：模型状态、一键检测与动态参数 UI
+- `video-duration-fix.js`：图生视频模型时长范围修复
+- `video-catalog-fix.js`：按当前 Gitee 视频生成页精选 I2V/T2V 模型
 - `styles.css`：页面样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
