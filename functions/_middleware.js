@@ -13,6 +13,7 @@ export async function onRequest(context) {
   const scripts = [
     "model-workbench.js",
     "video-duration-fix.js",
+    "video-catalog-fix.js",
   ];
 
   for (const script of scripts) {
