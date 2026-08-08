@@ -38,7 +38,7 @@ const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== i
 if (duplicateIds.length) failures.push(`Duplicate static HTML ids: ${duplicateIds.join(", ")}`);
 notes.push(`checked ${ids.length} static HTML ids`);
 
-for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css"]) {
+for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css"]) {
   if (!html.includes(`href="./${stylesheet}"`)) failures.push(`Missing stylesheet in index.html: ${stylesheet}`);
 }
 
@@ -57,6 +57,7 @@ const requiredOrder = [
   "js/ui/history-center.js",
   "js/ui/workspace-layout.js",
   "js/ui/creation-tools.js",
+  "js/ui/studio-extras.js",
 ];
 let previous = -1;
 for (const file of requiredOrder) {
@@ -77,6 +78,19 @@ for (const file of forbiddenLegacy) {
   if (html.includes(file)) failures.push(`Legacy patch file is still referenced: ${file}`);
 }
 
+const workspace = fs.readFileSync(path.join(root, "js/ui/workspace-layout.js"), "utf8");
+for (const marker of ["workspace-rail", "workspace-inspector", "workspace-composer", "studio-drawer", "studioQuickModel"]) {
+  if (!workspace.includes(marker)) failures.push(`Creator-first workspace marker missing: ${marker}`);
+}
+if (!workspace.includes("enhanceOutputItem")) failures.push("Workspace gallery enhancement is missing");
+if (!workspace.includes("studio-output-debug")) failures.push("Raw output JSON must be collapsed behind debug details");
+
+const workspaceCss = fs.readFileSync(path.join(root, "workspace.css"), "utf8");
+for (const marker of [".workspace-rail", ".workspace-inspector", ".workspace-composer", ".studio-drawer", ".studio-lightbox"]) {
+  if (!workspaceCss.includes(marker)) failures.push(`Workspace CSS marker missing: ${marker}`);
+}
+if (!workspaceCss.includes("@media (max-width: 900px)")) failures.push("Mobile studio breakpoint is missing");
+
 const taskTracker = fs.readFileSync(path.join(root, "js/runtime/task-tracker.js"), "utf8");
 if (!taskTracker.includes("if (!run || run.finishedAt) return;")) failures.push("Task tracker must ignore updates after terminal state");
 if (!taskTracker.includes("inferTask(")) failures.push("Task tracker request attribution helper is missing");
@@ -96,14 +110,17 @@ if (!multiModel.includes("acceptedWithoutRecognizedResult")) failures.push("Ambi
 if (!multiModel.includes("if (res.ok || !last.retryable) break;")) failures.push("Edit/I2V compatibility loops must stop immediately after accepted or non-retryable responses");
 if (!multiModel.includes("if (res.ok || !last.retryable) break outer;")) failures.push("T2V compatibility loop must stop immediately after accepted or non-retryable responses");
 
-const creationCss = fs.readFileSync(path.join(root, "creation-tools.css"), "utf8");
-if (!creationCss.includes("workspace-preview-summary + .model-compare-panel + .row")) failures.push("Sticky preview toolbar override is missing");
-
 const creationTools = fs.readFileSync(path.join(root, "js/ui/creation-tools.js"), "utf8");
 if (!creationTools.includes("一次最多对比 3 个模型")) failures.push("Model comparison API-call limit is missing");
 if (!creationTools.includes("真实提交")) failures.push("Model comparison cost/real-request confirmation is missing");
+if (!creationTools.includes('document.createElement("details")')) failures.push("Model comparison should stay collapsed by default");
 if (!creationTools.includes('input.type = "password"')) failures.push("API key input must be masked by the final UI layer");
 if (!creationTools.includes("URL.revokeObjectURL")) failures.push("Output clear must release local blob URLs");
+
+const studioExtras = fs.readFileSync(path.join(root, "js/ui/studio-extras.js"), "utf8");
+if (!studioExtras.includes("DataTransfer")) failures.push("Generated image reuse must populate edit/video file inputs without manual re-upload");
+if (!studioExtras.includes("ctrlKey") || !studioExtras.includes("metaKey")) failures.push("Creator keyboard shortcut support is missing");
+if (!studioExtras.includes("studioTaskBtn")) failures.push("Compact task badge support is missing");
 
 const downloadProxy = fs.readFileSync(path.join(root, "functions/dl.js"), "utf8");
 if (!downloadProxy.includes('url.protocol !== "https:"')) failures.push("Download proxy must require HTTPS targets");
