@@ -66,7 +66,7 @@
 
   function createPromptTools(task) {
     const conf = TASKS[task], input = $(conf.promptId), panel = $(conf.panelId);
-    if (!input || !panel || panel.querySelector(`[data-prompt-tools="${task}"]`)) return;
+    if (!input || !panel || document.querySelector(`[data-prompt-tools="${task}"]`)) return;
     const box = document.createElement("div");
     box.className = "prompt-toolbox"; box.dataset.promptTools = task;
     box.innerHTML = `<div class="prompt-toolbox-head"><span class="prompt-toolbox-label">Prompt Tools</span><div class="prompt-toolbox-actions"><button type="button" class="btn pt-templates">模板</button><button type="button" class="btn pt-enhance">本地增强</button><button type="button" class="btn pt-undo">撤销</button></div></div><div class="prompt-template-bank"></div><div class="prompt-toolbox-note">“本地增强”只在浏览器中补充任务相关描述，不会调用额外 AI API，也不会产生额外请求费用。</div>`;
@@ -137,8 +137,8 @@
   function createComparePanel() {
     if ($("modelComparePanel")) return;
     const outputCard = $("output")?.closest(".card"); if (!outputCard) return;
-    const panel = document.createElement("section"); panel.id = "modelComparePanel"; panel.className = "model-compare-panel";
-    panel.innerHTML = `<div class="model-compare-head"><div><div class="model-compare-title">文生图模型对比</div><div class="model-compare-sub">使用同一个 Prompt 顺序调用 2–3 个模型，结果直接进入右侧 Output 与生成历史。每个模型都会提交真实 API 请求。</div></div></div><div class="model-compare-models"></div><div class="model-compare-footer"><div class="model-compare-status">建议优先比较已验证或推荐模型。</div><button type="button" class="btn primary model-compare-run">开始对比</button></div>`;
+    const panel = document.createElement("details"); panel.id = "modelComparePanel"; panel.className = "model-compare-panel";
+    panel.innerHTML = `<summary><span>模型对比</span><small>同一 Prompt 对比 2–3 个文生图模型</small></summary><div class="model-compare-content"><div class="model-compare-models"></div><div class="model-compare-footer"><div class="model-compare-status">默认选择两个推荐模型；每个模型都会提交真实 API 请求。</div><button type="button" class="btn primary model-compare-run">开始对比</button></div></div>`;
     const anchor = $("workspacePreviewSummary") || outputCard.firstChild; if (anchor?.nextSibling) outputCard.insertBefore(panel, anchor.nextSibling); else outputCard.appendChild(panel);
     const modelsBox = panel.querySelector(".model-compare-models"), defaults = new Set(["Qwen-Image-2512", "z-image-turbo"]);
     for (const model of compareModels()) {
