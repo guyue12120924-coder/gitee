@@ -44,7 +44,8 @@
 
 - 常用参数仍由 Adapter schema 生成
 - 高级参数继续折叠
-- Endpoint / Extra JSON 仍保留在模型卡高级区
+- Endpoint / Extra JSON 仍保留在“高级与诊断”中
+- 模型健康检测与 Adapter 技术说明不再长期占据主界面
 - 移动端参数区变成底部 Sheet
 
 ### Step 4 — Prompt Composer ✅
@@ -58,7 +59,7 @@
 - Prompt Tools 仍作用于同一个输入框
 - Ctrl/Cmd + Enter 可以直接生成
 
-Composer 增加快速模型选择，切换后仍同步到原 Registry select。
+首轮实现曾在 Composer 再放一次快速模型下拉框。根据实际页面截图复盘后，这个重复入口已经删除：模型只在右侧 Inspector 选择，Composer 只负责 Prompt 与 Generate。
 
 ### Step 5 — Output Gallery ✅
 
@@ -76,15 +77,19 @@ Output 改为画廊式网格：
 - 编辑
 - 生成视频
 
-前端会将当前生成图片转换为 File，通过 DataTransfer 填充原来的 file input，再切换到对应工作流。因此普通用户不需要“下载 → 找文件 → 再上传”。
+前端会将当前生成图片转换为 File，通过 DataTransfer 填充原来的 file input，再切换到对应工作流。因此普通用户不需要“下载 → 找文件 → 再上传”。桌面端操作按钮只在作品 Hover 时出现，移动端保持常显。
 
 ### Step 7 — Task / History Drawers ✅
 
-任务中心与历史记录从页面主体移到右侧抽屉：
+任务中心与历史记录从页面主体移到右侧抽屉。
 
-- 顶栏和 Rail 都可打开
-- Task 按钮显示当前活动任务数量
-- 原 Task / History 功能和数据没有复制或删减
+截图复盘后进一步收敛为：
+
+- Task：只保留顶栏入口，并显示活动任务数量
+- History：桌面只保留左侧 Rail 入口；移动端在顶栏提供入口
+- Settings：只保留顶栏入口
+
+避免同一功能在顶栏和侧栏重复出现。
 
 ### Step 8 — Settings Drawer ✅
 
@@ -99,7 +104,7 @@ API Key 卡片移动到 Settings：
 
 Prompt 模板、本地增强、撤销仍在 Composer 内，但使用更轻的工具栏。
 
-文生图模型对比改成默认折叠的 `<details>`，不再长期占据 Output 顶部空间。
+文生图模型对比保留 `<details>` 实现，但折叠时完全不占 Canvas 空间。Canvas 顶部使用一个轻量“对比”按钮按需展开；“清空输出”也合并到同一工具栏。
 
 ### Step 10 — Mobile / Tablet ✅
 
@@ -108,35 +113,42 @@ Prompt 模板、本地增强、撤销仍在 Composer 内，但使用更轻的工
 - Rail 转成横向工作流切换
 - Inspector 变成底部 Sheet
 - Composer 固定在屏幕底部
-- Task / History / Settings 继续使用全高抽屉
+- Task / History / Settings 使用抽屉
 - Gallery 自动切为单列
+- History 顶栏入口只在移动端显示
 
-### Step 11 — UI 回归与静态审计 ⏳
+### Step 11 — UI 回归与静态审计 ✅ / 浏览器复核继续
 
-静态检查更新为 Creator Studio 结构，覆盖：
+静态检查已更新为 Creator Studio 结构，覆盖：
 
 - 新 CSS / JS 是否被 index.html 正确加载
 - 依赖顺序
 - Rail / Inspector / Composer / Drawer 标记
 - Output JSON 折叠
-- Model Compare 默认折叠
+- Model Compare 默认折叠且折叠时不占空间
+- Composer 不重复显示模型选择
 - API Key 隐藏
 - 图片结果直接送往 Edit / I2V
+- Prompt 自动高度
 - 移动端断点
 - 原有 API、任务、历史、安全审计规则继续保留
 
-最终仍需要部署后的真实浏览器冒烟测试，特别是：
+真实浏览器仍需要部署后复核，特别是不同显示分辨率下的视觉比例与交互手感。
 
-1. 四个工作流切换
-2. Composer Prompt / Generate
-3. Quick Model 切换
-4. 参数 Inspector 与移动端 Sheet
-5. Task / History / Settings Drawer
-6. 文生图结果 Lightbox
-7. “编辑 / 生成视频”图片直送
-8. Model Compare
-9. Ctrl/Cmd + Enter
-10. 真实生成链路不受 UI DOM 移动影响
+## 截图复盘后的视觉收敛 ✅
+
+根据 1536px 桌面截图又完成了一轮以“减少视觉噪声”为目标的修改：
+
+1. 顶栏压缩到约 56px，主题 / 任务 / 设置改为图标式入口。
+2. 左 Rail 删除无实际导航意义的 AI 标记，并删除任务 / 设置重复入口，只保留四个工作流和历史。
+3. Canvas 删除重复 Ready 状态，只保留工作流、当前模型、对比和清空两个轻工具。
+4. 空状态移除大面积虚线框与过多说明文字。
+5. Inspector 将 Adapter、model ID、Endpoint、模型诊断等技术信息统一放进“高级与诊断”。
+6. Inspector 默认只强调模型、模型状态和 Adapter-driven 常用参数。
+7. Composer 删除重复模型选择，默认高度压缩到约 54px 输入区 + 48px Generate，并根据内容自动增长。
+8. Gallery 减少卡片边框，图片结果“编辑 / 生成视频”操作改成桌面 Hover 显示。
+9. 浅色模式统一为 #F6F6F7 页面背景、白色 Inspector、#FAFAFA Canvas 和 Indigo 主强调色。
+10. 整体通过背景层级和留白替代大量边框，降低“API 调试工具”感。
 
 ## 当前文件职责
 
@@ -145,7 +157,7 @@ workspace.css
   Creator Studio 主布局、Canvas、Inspector、Composer、Drawer、Lightbox、响应式
 
 js/ui/workspace-layout.js
-  重排现有 DOM，但复用原控件与事件；负责工作流导航、Drawer、Composer、Gallery
+  重排现有 DOM，但复用原控件与事件；负责工作流导航、Drawer、Composer、Gallery、Inspector 信息收敛
 
 creation-tools.css
 js/ui/creation-tools.js
@@ -153,7 +165,7 @@ js/ui/creation-tools.js
 
 studio-extras.css
 js/ui/studio-extras.js
-  图片结果直送、任务角标、快捷键、设置入口和轻量 Toast
+  最终视觉收敛、图片结果直送、Prompt 自动高度、任务角标、快捷键、设置入口和轻量 Toast
 ```
 
-这一轮不会重新引入 `xxx-hotfix.js`。界面层新增文件按照单一职责拆分，底层生成仍只有现有 Registry / Adapter / Runtime 一套逻辑。
+这一轮不会重新引入 `xxx-hotfix.js`。界面层继续按照单一职责拆分，底层生成仍只有现有 Registry / Adapter / Runtime 一套逻辑。
