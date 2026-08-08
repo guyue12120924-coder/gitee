@@ -98,15 +98,32 @@
 
   function preferVerifiedDefaults() {
     try {
-      const migrationKey = "moark_verified_video_defaults_v1";
+      const migrationKey = "moark_verified_defaults_v2";
       const migrated = localStorage.getItem(migrationKey) === "1";
+
+      const t2iSaved = localStorage.getItem("moark_model_t2i");
       const i2vSaved = localStorage.getItem("moark_model_i2v");
       const t2vSaved = localStorage.getItem("moark_model_t2v");
+
+      const t2i = $("mmT2IModel");
       const i2v = $("mmI2VModel");
       const t2v = $("mmT2VModel");
 
-      const oldAutoDefaults = new Set([null, "", "ViduQ3-Pro"]);
-      if (!migrated && oldAutoDefaults.has(i2vSaved) && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
+      // The original project already proved z-image-turbo works with
+      // /v1/images/generations. The first multi-model release accidentally
+      // changed the initial T2I model to Qwen-Image-2512, which can fail for
+      // tokens/endpoints that do not expose the same image API contract.
+      const oldT2IAutoDefaults = new Set([null, "", "Qwen-Image-2512"]);
+      if (!migrated && oldT2IAutoDefaults.has(t2iSaved) && t2i && [...t2i.options].some((o) => o.value === "z-image-turbo")) {
+        t2i.value = "z-image-turbo";
+        t2i.dispatchEvent(new Event("change"));
+      } else if (!t2iSaved && t2i && [...t2i.options].some((o) => o.value === "z-image-turbo")) {
+        t2i.value = "z-image-turbo";
+        t2i.dispatchEvent(new Event("change"));
+      }
+
+      const oldVideoAutoDefaults = new Set([null, "", "ViduQ3-Pro"]);
+      if (!migrated && oldVideoAutoDefaults.has(i2vSaved) && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
         i2v.value = "Wan2_2-I2V-A14B";
         i2v.dispatchEvent(new Event("change"));
       } else if (!i2vSaved && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
@@ -114,7 +131,7 @@
         i2v.dispatchEvent(new Event("change"));
       }
 
-      if (!migrated && oldAutoDefaults.has(t2vSaved) && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
+      if (!migrated && oldVideoAutoDefaults.has(t2vSaved) && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
         t2v.value = "HunyuanVideo-1.5";
         t2v.dispatchEvent(new Event("change"));
       } else if (!t2vSaved && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
@@ -216,8 +233,6 @@
   }
 
   window.addEventListener("DOMContentLoaded", () => {
-    // multi-model.js registers its DOMContentLoaded handler before this file,
-    // so its model controls/button handlers are ready by the time this runs.
     preferVerifiedDefaults();
     markExperimentalModels();
     syncWanAutoFrames();
