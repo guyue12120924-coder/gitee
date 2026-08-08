@@ -17,7 +17,7 @@
     textVideo: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h6M7 13h4"/><path d="m15 11 3 2-3 2Z"/></svg>',
     history: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.2-5.7L3.5 8.5"/><path d="M3.5 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg>',
     task: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
-    settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7a7 7 0 0 0-.8-1.8l.9-1.9-2.2-2.2-1.9.9a7 7 0 0 0-1.8-.8L10.5 2h-3l-.7 2a7 7 0 0 0-1.8.8l-1.9-.9L.9 6.1 1.8 8a7 7 0 0 0-.8 1.8l-2 .7v3l2 .7a7 7 0 0 0 .8 1.8l-.9 1.9 2.2 2.2 1.9-.9a7 7 0 0 0 1.8.8l.7 2h3l.7-2a7 7 0 0 0 1.8-.8l1.9.9 2.2-2.2-.9-1.9a7 7 0 0 0 .8-1.8Z" transform="translate(2.5 0) scale(.79)"/></svg>',
+    settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.1M12 19.1v2.1M4.8 4.8l1.5 1.5M17.7 17.7l1.5 1.5M2.8 12h2.1M19.1 12h2.1M4.8 19.2l1.5-1.5M17.7 6.3l1.5-1.5"/></svg>',
     download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M5 20h14"/></svg>',
     model: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 7 4-7 4-7-4 7-4Z"/><path d="m5 12 7 4 7-4"/><path d="m5 17 7 4 7-4"/></svg>',
   };
@@ -139,7 +139,6 @@
       requestAnimationFrame(() => {
         queued = false;
         syncGalleryMode();
-        syncLightboxActions();
       });
     };
     new MutationObserver(schedule).observe(output, { childList: true, subtree: true });
@@ -169,8 +168,11 @@
       actions.className = "studio-lightbox-actions";
       lightbox.appendChild(actions);
     }
-    actions.replaceChildren();
     const sourceActions = [...card.querySelectorAll(".studio-result-actions .studio-result-action")];
+    const signature = sourceActions.map((source) => source.textContent?.trim() || source.title || "操作").join("|");
+    if (actions.dataset.signature === signature) return;
+    actions.dataset.signature = signature;
+    actions.replaceChildren();
     for (const source of sourceActions) {
       const button = document.createElement("button");
       button.type = "button";
@@ -182,7 +184,12 @@
   }
 
   function setupLightboxObserver() {
-    new MutationObserver(syncLightboxActions).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "src"] });
+    document.addEventListener("click", (event) => {
+      if (event.target?.matches?.("#output img.studio-preview-media")) setTimeout(syncLightboxActions, 0);
+    }, true);
+    new MutationObserver(() => {
+      if ($("studioLightbox")) syncLightboxActions();
+    }).observe(document.body, { childList: true });
   }
 
   function closeAllModelMenus(except = null) {
@@ -217,6 +224,35 @@
     }
   }
 
+  function appendModelOption(group, select, option, task, picker) {
+    const meta = modelMeta(task, option.value, option);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "studio-model-option";
+    button.dataset.value = option.value;
+    button.dataset.search = `${meta.label} ${meta.meta} ${option.value}`;
+    const copy = document.createElement("span");
+    copy.className = "studio-model-option-copy";
+    const strong = document.createElement("strong");
+    strong.textContent = meta.label;
+    const sub = document.createElement("span");
+    sub.textContent = meta.meta;
+    copy.append(strong, sub);
+    const status = document.createElement("span");
+    status.className = `studio-model-option-status is-${meta.state === "verified" ? "verified" : meta.state === "experimental" ? "experimental" : "adapted"}`;
+    button.append(copy, status);
+    button.addEventListener("click", () => {
+      if (select.value !== option.value) {
+        select.value = option.value;
+        dispatchValue(select);
+      }
+      syncModelPicker(select);
+      picker.classList.remove("is-open");
+      picker.querySelector(".studio-model-trigger")?.setAttribute("aria-expanded", "false");
+    });
+    group.appendChild(button);
+  }
+
   function rebuildModelMenu(select, picker) {
     const task = TASK_BY_SELECT[select.id];
     const menu = picker.querySelector(".studio-model-menu");
@@ -235,48 +271,37 @@
       menu.appendChild(input);
     }
 
-    const sources = select.querySelectorAll("optgroup").length ? [...select.children] : [select];
-    for (const source of sources) {
-      const options = source === select ? [...select.options] : [...source.querySelectorAll(":scope > option")];
+    const optgroups = [...select.querySelectorAll(":scope > optgroup")];
+    for (const source of optgroups) {
+      const options = [...source.querySelectorAll(":scope > option")];
       if (!options.length) continue;
       const group = document.createElement("section");
       group.className = "studio-model-group";
-      if (source !== select) {
-        const label = document.createElement("div");
-        label.className = "studio-model-group-label";
-        label.textContent = source.label || "更多模型";
-        group.appendChild(label);
-      }
-      for (const option of options) {
-        const meta = modelMeta(task, option.value, option);
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "studio-model-option";
-        button.dataset.value = option.value;
-        button.dataset.search = `${meta.label} ${meta.meta} ${option.value}`;
-        const copy = document.createElement("span");
-        copy.className = "studio-model-option-copy";
-        const strong = document.createElement("strong");
-        strong.textContent = meta.label;
-        const sub = document.createElement("span");
-        sub.textContent = meta.meta;
-        copy.append(strong, sub);
-        const status = document.createElement("span");
-        status.className = `studio-model-option-status is-${meta.state === "verified" ? "verified" : meta.state === "experimental" ? "experimental" : "adapted"}`;
-        button.append(copy, status);
-        button.addEventListener("click", () => {
-          if (select.value !== option.value) {
-            select.value = option.value;
-            dispatchValue(select);
-          }
-          syncModelPicker(select);
-          picker.classList.remove("is-open");
-          picker.querySelector(".studio-model-trigger")?.setAttribute("aria-expanded", "false");
-        });
-        group.appendChild(button);
-      }
+      const label = document.createElement("div");
+      label.className = "studio-model-group-label";
+      label.textContent = source.label || "更多模型";
+      group.appendChild(label);
+      for (const option of options) appendModelOption(group, select, option, task, picker);
       menu.appendChild(group);
     }
+
+    const standalone = [...select.children].filter((node) => node.tagName === "OPTION");
+    if (standalone.length || !optgroups.length) {
+      const options = optgroups.length ? standalone : [...select.options];
+      if (options.length) {
+        const group = document.createElement("section");
+        group.className = "studio-model-group";
+        if (optgroups.length) {
+          const label = document.createElement("div");
+          label.className = "studio-model-group-label";
+          label.textContent = "其他";
+          group.appendChild(label);
+        }
+        for (const option of options) appendModelOption(group, select, option, task, picker);
+        menu.appendChild(group);
+      }
+    }
+
     syncModelPicker(select);
     if (keepSearch) filterModelMenu(picker, keepSearch);
   }
@@ -355,8 +380,7 @@
     const body = $("studioDrawerBody-settings");
     const apiCard = body?.querySelector(".workspace-api-card");
     if (!body || !apiCard || $("studioProductSettings")) return false;
-    const previousExtras = $("studioSettingsExtras");
-    previousExtras?.remove();
+    $("studioSettingsExtras")?.remove();
 
     const root = document.createElement("div");
     root.id = "studioProductSettings";
@@ -389,7 +413,8 @@
       root.appendChild(developer);
     }
     body.prepend(root);
-    syncThemeChoices();
+    if (currentThemeMode() === "system") applyThemeMode("system");
+    else syncThemeChoices();
     return true;
   }
 
