@@ -11,6 +11,7 @@
 .workspace-composer-input { font-size: 13px !important; }
 
 /* ===== Upload cards ===== */
+.workspace-inspector-panel > .grid2 { grid-template-columns: 1fr !important; gap: 10px !important; }
 .studio-upload-field { margin: 0 2px 12px !important; }
 .studio-upload-legacy-label,
 .studio-upload-native { display: none !important; }
