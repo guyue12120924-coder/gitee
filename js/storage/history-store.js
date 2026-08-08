@@ -114,49 +114,74 @@
     catch {}
   }
 
+  function removeFallback(id) {
+    const records = fallbackRead().filter((item) => item.id !== id);
+    fallbackWrite(records);
+  }
+
+  function mergeRecords(primary, fallback) {
+    const map = new Map();
+    for (const record of [...primary, ...fallback]) {
+      if (!record?.id) continue;
+      const existing = map.get(record.id);
+      const currentTime = record.finishedAt || record.startedAt || 0;
+      const existingTime = existing?.finishedAt || existing?.startedAt || 0;
+      if (!existing || currentTime >= existingTime) map.set(record.id, record);
+    }
+    return [...map.values()].sort((a, b) => (b.finishedAt || b.startedAt || 0) - (a.finishedAt || a.startedAt || 0));
+  }
+
   async function allRecords() {
+    const fallback = fallbackRead();
     try {
       const records = await idbAll();
-      return records.sort((a, b) => (b.finishedAt || b.startedAt || 0) - (a.finishedAt || a.startedAt || 0));
+      return mergeRecords(records, fallback);
     } catch {
-      return fallbackRead().sort((a, b) => (b.finishedAt || b.startedAt || 0) - (a.finishedAt || a.startedAt || 0));
+      return mergeRecords([], fallback);
     }
   }
 
   async function trim() {
     const records = await allRecords();
+    const keep = records.slice(0, MAX_RECORDS);
     const extras = records.slice(MAX_RECORDS);
+    fallbackWrite(fallbackRead().filter((item) => keep.some((record) => record.id === item.id)));
     if (!extras.length) return;
-    try {
-      for (const record of extras) await idbDelete(record.id);
-    } catch {
-      fallbackWrite(records.slice(0, MAX_RECORDS));
+    for (const record of extras) {
+      try { await idbDelete(record.id); } catch {}
+      removeFallback(record.id);
     }
   }
 
   async function save(record) {
     const safe = clone(record);
+    let storedInIdb = false;
     try {
       await idbPut(safe);
-      await trim();
-    } catch {
+      storedInIdb = true;
+    } catch {}
+
+    if (storedInIdb) {
+      removeFallback(safe.id);
+    } else {
       const records = fallbackRead().filter((item) => item.id !== safe.id);
       records.unshift(safe);
       fallbackWrite(records);
     }
+
+    await trim();
     emit("save", safe);
     return safe;
   }
 
   async function remove(id) {
-    try { await idbDelete(id); }
-    catch { fallbackWrite(fallbackRead().filter((item) => item.id !== id)); }
+    try { await idbDelete(id); } catch {}
+    removeFallback(id);
     emit("remove", { id });
   }
 
   async function clear() {
-    try { await idbClear(); }
-    catch { fallbackWrite([]); }
+    try { await idbClear(); } catch {}
     try { localStorage.removeItem(FALLBACK_KEY); } catch {}
     emit("clear");
   }
