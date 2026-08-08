@@ -10,6 +10,7 @@
 - 文生视频（Text-to-Video）
 - 每个功能均支持多模型切换
 - 支持自定义模型 ID、Endpoint 与附加 JSON 参数
+- 模型参数由 Adapter 自动生成，切换模型后只显示该模型适用参数
 - 可手动尝试 `GET /v1/models` 同步当前 Token 可见模型；该接口未作为必需能力，失败不影响内置模型和自定义模型
 - 生成结果直接在网页展示并提供下载
 
@@ -129,7 +130,7 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 - API Endpoint
 - 附加 JSON 参数
 
-这样 Gitee 上线新模型后，即使项目尚未更新，也可以直接测试。
+这样 Gitee 上线新模型后，即使项目尚未更新，也可以直接测试。自定义模型会使用当前任务的通用 Adapter 参数面板，再通过高级 JSON 覆盖特殊字段。
 
 ## API 与兼容策略
 
@@ -157,13 +158,39 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 模型本身的任务类型、推荐分组、默认模型、状态、时长范围和 Adapter 绑定统一写在 `js/models/registry.js`，不再散落在主运行文件中。
 
+## 模型驱动参数 UI
+
+第三阶段开始由 Adapter 同时声明“怎么请求”和“页面应该显示哪些参数”。参数描述统一通过 `parameters` schema 提供，`js/ui/model-parameter-ui.js` 根据当前模型自动渲染。
+
+例如 `qwen-image` 只展示 Qwen 原生尺寸，`z-image` 展示尺寸和生成张数；普通视频模型展示分辨率、比例、时长等通用参数；Wan2.2 会展示分辨率预设、宽高、时长、Seed，并把 steps、guidance、FPS、帧数、ZIP 等放进“高级模型参数”；HunyuanVideo-1.5 则只展示自己对应的比例、帧数、Seed、steps 和 FPS。
+
+Adapter 中的参数 schema 采用类似下面的形式：
+
+```js
+parameters: [
+  {
+    key: "duration",
+    label: "时长（秒）",
+    type: "number",
+    sourceId: "mmI2VDuration",
+    min: 1,
+    max: 30,
+    default: 5
+  }
+]
+```
+
+如果 Registry 中某个具体模型定义了 `limits.duration`，Adapter Registry 会自动覆盖通用 schema 的 `min`、`max` 和推荐值。因此 ViduQ3、ViduQ2、HappyHorse、Wan2.7 等模型切换后会直接显示各自允许的时长范围，不再依赖手写 UI 判断。
+
+为了降低重构风险，旧 HTML 参数输入目前仍作为隐藏的兼容数据层保留。新的参数面板会把用户输入同步到底层旧输入，再由现有稳定请求流程读取；页面上不再展示那些固定的 Wan/Hunyuan 参数块。这样第三阶段完成后可以先保持 API 行为不变，再在后续阶段逐步删除兼容 DOM。
+
 ## 运行时验证说明
 
 模型“在 Gitee Serverless 模型广场存在”不等于“所有模型共享完全相同的请求字段”。原项目的 `Wan2_2-I2V-A14B` 与 `HunyuanVideo-1.5` 有已有调用逻辑；Vidu、LTX、Wan 2.7、HappyHorse 等新增模型仍应以 Gitee 当前模型页提供的 API 示例为最终依据。页面会显示具体 HTTP 错误，便于继续做模型级适配。
 
 ## 前端运行时结构
 
-第二阶段完成后，前端加载顺序固定为：
+第三阶段完成后，前端加载顺序固定为：
 
 ```text
 app.js
@@ -179,26 +206,29 @@ js/adapters/video-adapters.js
 multi-model.js
   ↓
 js/runtime/model-runtime.js
+  ↓
+js/ui/model-parameter-ui.js
 ```
 
 职责划分：
 
 - `app.js`：原项目基础 UI、主题、预览和已验证旧链路，作为兼容基线
 - `js/models/registry.js`：唯一模型目录，记录任务、分组、默认模型、状态、限制和 Adapter ID
-- `js/adapters/adapter-registry.js`：Adapter 注册与模型到 Adapter 的解析入口
-- `js/adapters/image-adapters.js`：Qwen、z-image、通用图像和图像编辑适配
-- `js/adapters/video-adapters.js`：通用视频、Wan I2V、Hunyuan T2V 适配
+- `js/adapters/adapter-registry.js`：Adapter 注册、模型到 Adapter 的解析，以及模型参数 schema 与 Registry 限制的合并
+- `js/adapters/image-adapters.js`：Qwen、z-image、通用图像和图像编辑适配，同时声明图像模型参数
+- `js/adapters/video-adapters.js`：通用视频、Wan I2V、Hunyuan T2V 适配，同时声明视频模型参数
 - `multi-model.js`：模型选择、自定义模型、生成流程与模型同步；不再维护一份重复模型清单
-- `js/runtime/model-runtime.js`：健康状态、动态参数、请求重试、时长校正、Loading 和 Wan 分段等运行时能力，全部从 Registry / Adapter 读取模型差异
+- `js/runtime/model-runtime.js`：健康状态、请求重试、时长校正、Loading 和 Wan 分段等运行时能力
+- `js/ui/model-parameter-ui.js`：根据当前 Adapter 动态渲染常用/高级参数，并同步到底层兼容输入
 
-第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态；第二阶段进一步把模型定义和模型差异从 `multi-model.js` / Runtime 中抽离出来。
+第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态；第二阶段把模型定义和模型差异从主流程抽离；第三阶段进一步把参数界面从固定 HTML 转为 Adapter 驱动。
 
 ## 新增模型的推荐方式
 
 以后新增普通模型时，优先只做两件事：
 
 1. 在 `js/models/registry.js` 增加模型条目，并绑定已有 Adapter。
-2. 只有当请求结构真的不同，才在 `js/adapters/` 新增或扩展 Adapter。
+2. 只有当请求结构或参数界面真的不同，才在 `js/adapters/` 新增或扩展 Adapter。
 
 例如一个新的通用文生图模型通常只需：
 
@@ -211,7 +241,7 @@ js/runtime/model-runtime.js
 }
 ```
 
-不需要再修改请求主流程。
+它会自动继承 `generic-image` 的请求策略和参数面板，不需要再修改 HTML 或生成主流程。
 
 ## Cloudflare Pages 部署
 
@@ -239,11 +269,12 @@ wrangler pages dev .
 - `index.html`：页面与四类功能面板，并显式按依赖顺序加载前端脚本
 - `app.js`：原项目基础功能与兼容基线
 - `js/models/registry.js`：集中模型 Registry
-- `js/adapters/adapter-registry.js`：Adapter 注册中心
-- `js/adapters/image-adapters.js`：图像/编辑 Adapter
-- `js/adapters/video-adapters.js`：视频 Adapter
+- `js/adapters/adapter-registry.js`：Adapter 注册中心与参数 schema 解析
+- `js/adapters/image-adapters.js`：图像/编辑 Adapter 与参数 schema
+- `js/adapters/video-adapters.js`：视频 Adapter 与参数 schema
 - `multi-model.js`：多模型 UI、统一生成入口和实验性同步
 - `js/runtime/model-runtime.js`：统一运行时
+- `js/ui/model-parameter-ui.js`：模型驱动参数渲染器
 - `styles.css`：页面样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
