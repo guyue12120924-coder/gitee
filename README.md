@@ -148,10 +148,13 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 不同模型的请求参数可能不同，因此多模型扩展采用兼容策略：
 
 - 文生图支持同步 URL、Base64 和异步 task 结果
+- Qwen 文生图自动转换为模型支持的原生尺寸桶
 - 图像编辑仅对 Qwen 编辑模型发送 `task_types`、`guidance_scale`、`num_inference_steps` 等 Qwen 风格参数；其他编辑模型使用更精简的通用表单
 - 图像编辑会尝试异步和同步 edits Endpoint
 - 图生视频会尝试通用 multipart、Wan 风格 multipart，以及部分 JSON 图片输入形式
 - 文生视频会尝试通用视频参数、Hunyuan 旧参数，以及多个常见异步视频 Endpoint
+- Vidu、HappyHorse、Wan2.7 等模型的安全时长范围会在提交前统一校正
+- Wan2.2 继续保留长视频分段与 ZIP 打包能力
 - 自动轮询遇到明确 4xx 会提前结束，避免无意义地长时间等待
 
 如果某个新模型参数特殊，可在“高级”区域用 Endpoint / 附加 JSON 参数覆盖。
@@ -160,13 +163,33 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 模型“在 Gitee Serverless 模型广场存在”不等于“所有模型共享完全相同的请求字段”。原项目的 `Wan2_2-I2V-A14B` 与 `HunyuanVideo-1.5` 有已有调用逻辑；Vidu、LTX、Wan 2.7、HappyHorse 等新增模型应以 Gitee 当前模型页提供的 API 示例为最终依据。页面会显示具体 HTTP 错误，便于继续做模型级适配。
 
+## 前端运行时结构
+
+第一阶段重构后，不再通过多个 `*-fix.js` 叠加修补，也不再由 Cloudflare Middleware 动态注入前端脚本。当前加载顺序固定为：
+
+```text
+app.js
+  ↓
+multi-model.js
+  ↓
+js/runtime/model-runtime.js
+```
+
+其中：
+
+- `app.js` 保留原项目基础 UI、主题、预览和已验证旧链路，作为兼容基线
+- `multi-model.js` 负责多模型选择、自定义模型、统一运行入口和实验性模型同步
+- `js/runtime/model-runtime.js` 集中负责模型请求适配、尺寸与时长校正、精选视频目录、模型健康状态、一键检测、动态参数显示、API Key/Loading 包装以及 Wan2.2 分段逻辑
+
+原来的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 已合并并删除，避免加载顺序和重复事件绑定问题。
+
 ## Cloudflare Pages 部署
 
 项目包含 Pages Functions：
 
 - `functions/api/[[path]].js`：代理 Gitee AI `/v1/*`
 - `functions/dl.js`：代理图片 / 视频下载
-- `functions/_middleware.js`：给首页注入模型工作台、视频参数修复与精选视频目录脚本
+- `functions/_middleware.js`：仅处理首页缓存策略，不再注入业务脚本
 
 部署步骤：
 
@@ -183,13 +206,11 @@ wrangler pages dev .
 
 ## 主要文件
 
-- `index.html`：页面与四类功能面板
-- `app.js`：原项目基础功能
-- `multi-model.js`：多模型目录、模型切换、自定义模型、实验性模型同步与请求兼容层
-- `multi-model-hotfix.js`：模型参数适配与稳定性修复
-- `model-workbench.js`：模型状态、一键检测与动态参数 UI
-- `video-duration-fix.js`：图生视频模型时长范围修复
-- `video-catalog-fix.js`：按当前 Gitee 视频生成页精选 I2V/T2V 模型
+- `index.html`：页面与四类功能面板，并显式加载前端脚本
+- `app.js`：原项目基础功能与兼容基线
+- `multi-model.js`：多模型目录、模型切换、自定义模型、实验性模型同步与统一生成入口
+- `js/runtime/model-runtime.js`：统一模型运行时，替代原来的多个 hotfix / workbench / video patch 文件
 - `styles.css`：页面样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
+- `functions/_middleware.js`：首页缓存控制
