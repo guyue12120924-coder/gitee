@@ -48,7 +48,7 @@
       modelSel.value = FUNCTION_VALUES[task];
       dispatch(modelSel);
       setTimeout(() => {
-        document.body.classList.add("studio-inspector-open");
+        if (window.innerWidth <= 900) document.body.classList.add("studio-inspector-open");
         input.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 120);
       showToast(task === "edit" ? "图片已送入图像编辑" : "图片已送入图生视频", "ok");
@@ -78,7 +78,7 @@
     video.title = "将此图直接用于图生视频";
     video.addEventListener("click", (event) => { event.stopPropagation(); sendImageTo("i2v", image.currentSrc || image.src); });
     actions.append(edit, video);
-    item.appendChild(actions);
+    image.insertAdjacentElement("afterend", actions);
   }
 
   function setupResultActions() {
@@ -87,6 +87,23 @@
     const sync = () => [...output.querySelectorAll(":scope > .item")].forEach(enhanceResultItem);
     new MutationObserver(sync).observe(output, { childList: true });
     sync();
+  }
+
+  function setupPromptAutosize() {
+    const prompts = [...new Set(Object.values(PROMPT_IDS))].map($).filter(Boolean);
+    const resize = (input) => {
+      input.style.height = "auto";
+      const max = window.innerWidth <= 900 ? 100 : 118;
+      input.style.height = `${Math.max(54, Math.min(max, input.scrollHeight))}px`;
+      input.style.overflowY = input.scrollHeight > max ? "auto" : "hidden";
+    };
+    for (const prompt of prompts) {
+      if (prompt.dataset.studioAutosize === "1") continue;
+      prompt.dataset.studioAutosize = "1";
+      prompt.addEventListener("input", () => resize(prompt));
+      resize(prompt);
+    }
+    window.addEventListener("resize", () => prompts.forEach(resize), { passive: true });
   }
 
   function setupSettingsExtras() {
@@ -157,6 +174,7 @@
 
   function init() {
     setupResultActions();
+    setupPromptAutosize();
     setupSettingsExtras();
     setupTaskBadge();
     setupKeyboardShortcuts();
