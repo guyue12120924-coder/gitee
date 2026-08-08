@@ -2,7 +2,8 @@
   "use strict";
 
   const TRACKER = window.GiteeTaskTracker;
-  if (!TRACKER) throw new Error("GiteeTaskTracker must load before history-store.js");
+  const ADAPTERS = window.GiteeModelAdapters;
+  if (!TRACKER || !ADAPTERS) throw new Error("Task tracker and adapter layer must load before history-store.js");
 
   const DB_NAME = "gitee-ai-workbench";
   const DB_VERSION = 1;
@@ -10,7 +11,11 @@
   const FALLBACK_KEY = "moark_generation_history_v1";
   const MAX_RECORDS = 100;
   const listeners = new Set();
+  const pending = new Map();
+  const FILE_IDS = { edit: ["editImg1", "editImg2"], i2v: ["wanImg"] };
   let dbPromise = null;
+
+  const $ = (id) => document.getElementById(id);
 
   function clone(value) {
     try { return structuredClone(value); }
@@ -176,17 +181,67 @@
     return record ? clone(record) : null;
   }
 
+  function readParameter(parameter) {
+    if (parameter.sourceId) {
+      const source = $(parameter.sourceId);
+      if (!source) return undefined;
+      if (parameter.type === "checkbox") return Boolean(source.checked);
+      return source.value;
+    }
+    if (parameter.sourceName) {
+      return [...document.querySelectorAll(`input[name="${parameter.sourceName}"]:checked`)].map((input) => input.value);
+    }
+    return undefined;
+  }
+
+  function captureContext(run) {
+    const parameters = {};
+    try {
+      for (const parameter of ADAPTERS.parametersFor(run.task, run.modelId) || []) {
+        const value = readParameter(parameter);
+        if (value !== undefined) parameters[parameter.key] = value;
+      }
+    } catch {}
+
+    const inputFiles = [];
+    for (const id of FILE_IDS[run.task] || []) {
+      const file = $(id)?.files?.[0];
+      if (file) inputFiles.push({ field: id, name: file.name, type: file.type, size: file.size });
+    }
+
+    return {
+      parameters,
+      extraJson: $(`mm-${run.task}-extra`)?.value || "",
+      endpointOverride: $(`mm-${run.task}-endpoint`)?.value || "",
+      inputFiles,
+    };
+  }
+
+  function resultUrls(raw) {
+    if (!raw || typeof raw !== "object") return [];
+    const urls = [
+      raw?.output?.file_url,
+      raw?.output?.video_url,
+      raw?.output?.url,
+      raw?.video?.url,
+      ...(Array.isArray(raw?.data) ? raw.data.map((item) => item?.url) : []),
+      ...(Array.isArray(raw?.images) ? raw.images.map((item) => item?.url) : []),
+    ].filter((value) => typeof value === "string" && /^https?:\/\//i.test(value));
+    return [...new Set(urls)];
+  }
+
   function fromRun(run) {
+    const context = pending.get(run.id) || captureContext(run);
     return {
       id: run.id,
       task: run.task,
       taskLabel: run.taskLabel,
       modelId: run.modelId,
       prompt: run.prompt || "",
-      parameters: clone(run.parameters || {}),
-      extraJson: run.extraJson || "",
-      endpointOverride: run.endpointOverride || "",
-      inputFiles: clone(run.inputFiles || []),
+      parameters: clone(context.parameters || {}),
+      extraJson: context.extraJson || "",
+      endpointOverride: context.endpointOverride || "",
+      inputFiles: clone(context.inputFiles || []),
       state: run.state,
       startedAt: run.startedAt,
       finishedAt: run.finishedAt || Date.now(),
@@ -196,7 +251,7 @@
       taskId: run.taskId || null,
       requestCount: run.requestCount || 0,
       pollCount: run.pollCount || 0,
-      resultUrls: [...new Set(run.resultUrls || [])].slice(0, 8),
+      resultUrls: [...new Set([...(run.resultUrls || []), ...resultUrls(run.lastRaw)])].slice(0, 8),
       lastError: run.lastError || null,
       attempts: (run.attempts || []).slice(-12).map((attempt) => ({
         endpoint: attempt.endpoint,
@@ -210,8 +265,14 @@
   }
 
   TRACKER.subscribe(({ type, run }) => {
+    if (type === "start" && run?.id) {
+      pending.set(run.id, captureContext(run));
+      return;
+    }
     if (type !== "finish" || !run?.finishedAt) return;
-    save(fromRun(run)).catch((error) => console.warn("history save failed", error));
+    const record = fromRun(run);
+    pending.delete(run.id);
+    save(record).catch((error) => console.warn("history save failed", error));
   });
 
   window.GiteeHistoryStore = Object.freeze({
