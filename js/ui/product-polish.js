@@ -56,7 +56,7 @@
     for (const button of document.querySelectorAll(".workspace-rail-button[data-function-value]")) {
       const holder = button.querySelector(".workspace-rail-icon");
       const icon = workflowIcons[button.dataset.functionValue];
-      if (holder && icon) holder.innerHTML = icon;
+      if (holder && icon && holder.innerHTML !== icon) holder.innerHTML = icon;
     }
     const history = document.querySelector('.workspace-rail-button[data-drawer="history"] .workspace-rail-icon');
     if (history) history.innerHTML = ICONS.history;
@@ -109,7 +109,8 @@
     const media = item.querySelector("img,video");
     item.classList.toggle("studio-media-card", Boolean(media));
     item.classList.toggle("studio-system-card", !media);
-    if (!media) return;
+    if (!media || item.dataset.productMediaDecorated === "1") return;
+    item.dataset.productMediaDecorated = "1";
     const image = media.tagName === "IMG" ? media : null;
     requestAnimationFrame(() => {
       ensureDownloadAction(item, image);
@@ -208,9 +209,11 @@
     const meta = modelMeta(task, select.value, option);
     const strong = picker.querySelector(".studio-model-trigger-copy strong");
     const sub = picker.querySelector(".studio-model-trigger-copy span");
-    if (strong) strong.textContent = meta.label;
-    if (sub) sub.textContent = meta.meta;
-    for (const modelButton of picker.querySelectorAll(".studio-model-option")) modelButton.classList.toggle("is-active", modelButton.dataset.value === select.value);
+    if (strong && strong.textContent !== meta.label) strong.textContent = meta.label;
+    if (sub && sub.textContent !== meta.meta) sub.textContent = meta.meta;
+    for (const modelButton of picker.querySelectorAll(".studio-model-option")) {
+      modelButton.classList.toggle("is-active", modelButton.dataset.value === select.value);
+    }
   }
 
   function filterModelMenu(picker, term) {
@@ -253,12 +256,20 @@
     group.appendChild(button);
   }
 
+  function modelOptionsSignature(select) {
+    return [...select.options].map((option) => `${option.value}\u0000${option.textContent || ""}`).join("\u0001");
+  }
+
   function rebuildModelMenu(select, picker) {
+    const signature = modelOptionsSignature(select);
+    if (picker.dataset.optionsSignature === signature) {
+      syncModelPicker(select);
+      return;
+    }
+    picker.dataset.optionsSignature = signature;
     const task = TASK_BY_SELECT[select.id];
     const menu = picker.querySelector(".studio-model-menu");
-    const search = picker.querySelector(".studio-model-search");
     if (!menu) return;
-    const keepSearch = search?.value || "";
     menu.replaceChildren();
     const currentOptions = [...select.options];
     if (currentOptions.length > 8) {
@@ -266,7 +277,6 @@
       input.className = "studio-model-search";
       input.type = "search";
       input.placeholder = "搜索模型…";
-      input.value = keepSearch;
       input.addEventListener("input", () => filterModelMenu(picker, input.value));
       menu.appendChild(input);
     }
@@ -287,7 +297,7 @@
 
     const standalone = [...select.children].filter((node) => node.tagName === "OPTION");
     if (standalone.length || !optgroups.length) {
-      const options = optgroups.length ? standalone : [...select.options];
+      const options = optgroups.length ? standalone : currentOptions;
       if (options.length) {
         const group = document.createElement("section");
         group.className = "studio-model-group";
@@ -301,14 +311,13 @@
         menu.appendChild(group);
       }
     }
-
     syncModelPicker(select);
-    if (keepSearch) filterModelMenu(picker, keepSearch);
   }
 
   function decorateModelSelect(select) {
-    if (!select || select.dataset.productPicker === "1") {
-      if (select) syncModelPicker(select);
+    if (!select) return;
+    if (select.dataset.productPicker === "1") {
+      syncModelPicker(select);
       return;
     }
     const task = TASK_BY_SELECT[select.id];
@@ -336,17 +345,22 @@
       if (next) picker.querySelector(".studio-model-search")?.focus();
     });
     select.addEventListener("change", () => syncModelPicker(select));
-    new MutationObserver(() => rebuildModelMenu(select, picker)).observe(select, { childList: true, subtree: true });
+    let queued = false;
+    new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        rebuildModelMenu(select, picker);
+      });
+    }).observe(select, { childList: true, subtree: true });
     rebuildModelMenu(select, picker);
   }
 
   function setupModelSelectors() {
-    const decorateAll = () => {
-      for (const id of Object.keys(TASK_BY_SELECT)) decorateModelSelect($(id));
-    };
-    decorateAll();
-    const host = $("workspaceInspectorHost");
-    if (host) new MutationObserver(decorateAll).observe(host, { childList: true, subtree: true });
+    // Important: do not observe workspaceInspectorHost and then resync every picker.
+    // syncModelPicker updates text nodes inside that host, which can create a MutationObserver feedback loop.
+    for (const id of Object.keys(TASK_BY_SELECT)) decorateModelSelect($(id));
     document.addEventListener("click", () => closeAllModelMenus());
   }
 
@@ -373,7 +387,9 @@
 
   function syncThemeChoices() {
     const mode = currentThemeMode();
-    for (const button of document.querySelectorAll(".studio-theme-choice")) button.classList.toggle("is-active", button.dataset.themeMode === mode);
+    for (const button of document.querySelectorAll(".studio-theme-choice")) {
+      button.classList.toggle("is-active", button.dataset.themeMode === mode);
+    }
   }
 
   function buildSettings() {
@@ -389,7 +405,9 @@
     const appearance = document.createElement("section");
     appearance.className = "studio-settings-block";
     appearance.innerHTML = `<div class="studio-settings-block-head">外观</div><div class="studio-theme-segment"><button type="button" class="studio-theme-choice" data-theme-mode="system">跟随系统</button><button type="button" class="studio-theme-choice" data-theme-mode="light">浅色</button><button type="button" class="studio-theme-choice" data-theme-mode="dark">深色</button></div>`;
-    for (const button of appearance.querySelectorAll(".studio-theme-choice")) button.addEventListener("click", () => applyThemeMode(button.dataset.themeMode));
+    for (const button of appearance.querySelectorAll(".studio-theme-choice")) {
+      button.addEventListener("click", () => applyThemeMode(button.dataset.themeMode));
+    }
 
     const api = document.createElement("section");
     api.className = "studio-settings-block studio-settings-api";
@@ -447,5 +465,7 @@
     setupSettingsProduct();
   }
 
-  window.addEventListener("DOMContentLoaded", () => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(init))));
+  window.addEventListener("DOMContentLoaded", () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(init)));
+  });
 })();
