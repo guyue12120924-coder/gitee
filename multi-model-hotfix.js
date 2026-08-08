@@ -98,19 +98,31 @@
 
   function preferVerifiedDefaults() {
     try {
+      const migrationKey = "moark_verified_video_defaults_v1";
+      const migrated = localStorage.getItem(migrationKey) === "1";
       const i2vSaved = localStorage.getItem("moark_model_i2v");
+      const t2vSaved = localStorage.getItem("moark_model_t2v");
       const i2v = $("mmI2VModel");
-      if (!i2vSaved && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
+      const t2v = $("mmT2VModel");
+
+      const oldAutoDefaults = new Set([null, "", "ViduQ3-Pro"]);
+      if (!migrated && oldAutoDefaults.has(i2vSaved) && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
+        i2v.value = "Wan2_2-I2V-A14B";
+        i2v.dispatchEvent(new Event("change"));
+      } else if (!i2vSaved && i2v && [...i2v.options].some((o) => o.value === "Wan2_2-I2V-A14B")) {
         i2v.value = "Wan2_2-I2V-A14B";
         i2v.dispatchEvent(new Event("change"));
       }
 
-      const t2vSaved = localStorage.getItem("moark_model_t2v");
-      const t2v = $("mmT2VModel");
-      if (!t2vSaved && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
+      if (!migrated && oldAutoDefaults.has(t2vSaved) && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
+        t2v.value = "HunyuanVideo-1.5";
+        t2v.dispatchEvent(new Event("change"));
+      } else if (!t2vSaved && t2v && [...t2v.options].some((o) => o.value === "HunyuanVideo-1.5")) {
         t2v.value = "HunyuanVideo-1.5";
         t2v.dispatchEvent(new Event("change"));
       }
+
+      localStorage.setItem(migrationKey, "1");
     } catch {}
   }
 
