@@ -119,7 +119,7 @@ Cloudflare Pages Function
 GET https://ai.gitee.com/v1/models
 ```
 
-Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。视频下拉框会继续以项目的精选清单为准，避免自动同步把数字人或不适配普通 I2V/T2V 的模型混入列表。
+Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。第二阶段后，自动同步只补充可安全归类的图像模型；普通视频模型继续由本地 Registry 精选，避免把数字人或不匹配 I2V/T2V 的模型误加入下拉框。
 
 ## 自定义模型
 
@@ -145,43 +145,73 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 /dl?url=...
 ```
 
-不同模型的请求参数可能不同，因此多模型扩展采用兼容策略：
+不同模型的请求参数通过 Adapter 层处理：
 
-- 文生图支持同步 URL、Base64 和异步 task 结果
-- Qwen 文生图自动转换为模型支持的原生尺寸桶
-- 图像编辑仅对 Qwen 编辑模型发送 `task_types`、`guidance_scale`、`num_inference_steps` 等 Qwen 风格参数；其他编辑模型使用更精简的通用表单
-- 图像编辑会尝试异步和同步 edits Endpoint
-- 图生视频会尝试通用 multipart、Wan 风格 multipart，以及部分 JSON 图片输入形式
-- 文生视频会尝试通用视频参数、Hunyuan 旧参数，以及多个常见异步视频 Endpoint
-- Vidu、HappyHorse、Wan2.7 等模型的安全时长范围会在提交前统一校正
-- Wan2.2 继续保留长视频分段与 ZIP 打包能力
-- 自动轮询遇到明确 4xx 会提前结束，避免无意义地长时间等待
+- `qwen-image`：Qwen 文生图原生尺寸桶与 JSON 兼容变体
+- `z-image`：保留已验证 OpenAI 风格 `size=1024x1024`
+- `generic-image`：通用图片参数与降级变体
+- `qwen-edit` / `generic-edit`：区分 Qwen 编辑专属参数与通用编辑参数
+- `generic-video`：Vidu / HappyHorse / Wan2.7 / LTX 等通用视频参数与 JSON 字段兼容
+- `wan-i2v`：Wan2.2 I2V 原项目兼容、专用 Endpoint 与 5 秒分段能力
+- `hunyuan-t2v`：HunyuanVideo-1.5 原项目已验证参数优先
 
-如果某个新模型参数特殊，可在“高级”区域用 Endpoint / 附加 JSON 参数覆盖。
+模型本身的任务类型、推荐分组、默认模型、状态、时长范围和 Adapter 绑定统一写在 `js/models/registry.js`，不再散落在主运行文件中。
 
 ## 运行时验证说明
 
-模型“在 Gitee Serverless 模型广场存在”不等于“所有模型共享完全相同的请求字段”。原项目的 `Wan2_2-I2V-A14B` 与 `HunyuanVideo-1.5` 有已有调用逻辑；Vidu、LTX、Wan 2.7、HappyHorse 等新增模型应以 Gitee 当前模型页提供的 API 示例为最终依据。页面会显示具体 HTTP 错误，便于继续做模型级适配。
+模型“在 Gitee Serverless 模型广场存在”不等于“所有模型共享完全相同的请求字段”。原项目的 `Wan2_2-I2V-A14B` 与 `HunyuanVideo-1.5` 有已有调用逻辑；Vidu、LTX、Wan 2.7、HappyHorse 等新增模型仍应以 Gitee 当前模型页提供的 API 示例为最终依据。页面会显示具体 HTTP 错误，便于继续做模型级适配。
 
 ## 前端运行时结构
 
-第一阶段重构后，不再通过多个 `*-fix.js` 叠加修补，也不再由 Cloudflare Middleware 动态注入前端脚本。当前加载顺序固定为：
+第二阶段完成后，前端加载顺序固定为：
 
 ```text
 app.js
+  ↓
+js/models/registry.js
+  ↓
+js/adapters/adapter-registry.js
+  ↓
+js/adapters/image-adapters.js
+  ↓
+js/adapters/video-adapters.js
   ↓
 multi-model.js
   ↓
 js/runtime/model-runtime.js
 ```
 
-其中：
+职责划分：
 
-- `app.js` 保留原项目基础 UI、主题、预览和已验证旧链路，作为兼容基线
-- `multi-model.js` 负责多模型选择、自定义模型、统一运行入口和实验性模型同步
-- `js/runtime/model-runtime.js` 集中负责模型请求适配、尺寸与时长校正、精选视频目录、模型健康状态、一键检测、动态参数显示、API Key/Loading 包装以及 Wan2.2 分段逻辑
+- `app.js`：原项目基础 UI、主题、预览和已验证旧链路，作为兼容基线
+- `js/models/registry.js`：唯一模型目录，记录任务、分组、默认模型、状态、限制和 Adapter ID
+- `js/adapters/adapter-registry.js`：Adapter 注册与模型到 Adapter 的解析入口
+- `js/adapters/image-adapters.js`：Qwen、z-image、通用图像和图像编辑适配
+- `js/adapters/video-adapters.js`：通用视频、Wan I2V、Hunyuan T2V 适配
+- `multi-model.js`：模型选择、自定义模型、生成流程与模型同步；不再维护一份重复模型清单
+- `js/runtime/model-runtime.js`：健康状态、动态参数、请求重试、时长校正、Loading 和 Wan 分段等运行时能力，全部从 Registry / Adapter 读取模型差异
 
-原来的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 已合并并删除，避免加载顺序和重复事件绑定问题。
+第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态；第二阶段进一步把模型定义和模型差异从 `multi-model.js` / Runtime 中抽离出来。
+
+## 新增模型的推荐方式
+
+以后新增普通模型时，优先只做两件事：
+
+1. 在 `js/models/registry.js` 增加模型条目，并绑定已有 Adapter。
+2. 只有当请求结构真的不同，才在 `js/adapters/` 新增或扩展 Adapter。
+
+例如一个新的通用文生图模型通常只需：
+
+```js
+{
+  id: "New-Image-Model",
+  label: "New-Image-Model",
+  adapter: "generic-image",
+  group: "more"
+}
+```
+
+不需要再修改请求主流程。
 
 ## Cloudflare Pages 部署
 
@@ -206,10 +236,14 @@ wrangler pages dev .
 
 ## 主要文件
 
-- `index.html`：页面与四类功能面板，并显式加载前端脚本
+- `index.html`：页面与四类功能面板，并显式按依赖顺序加载前端脚本
 - `app.js`：原项目基础功能与兼容基线
-- `multi-model.js`：多模型目录、模型切换、自定义模型、实验性模型同步与统一生成入口
-- `js/runtime/model-runtime.js`：统一模型运行时，替代原来的多个 hotfix / workbench / video patch 文件
+- `js/models/registry.js`：集中模型 Registry
+- `js/adapters/adapter-registry.js`：Adapter 注册中心
+- `js/adapters/image-adapters.js`：图像/编辑 Adapter
+- `js/adapters/video-adapters.js`：视频 Adapter
+- `multi-model.js`：多模型 UI、统一生成入口和实验性同步
+- `js/runtime/model-runtime.js`：统一运行时
 - `styles.css`：页面样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
