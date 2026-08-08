@@ -44,7 +44,7 @@
 
 - 常用参数仍由 Adapter schema 生成
 - 高级参数继续折叠
-- Endpoint / Extra JSON 仍保留在“高级与诊断”中
+- Endpoint / Extra JSON 收入开发者层
 - 模型健康检测与 Adapter 技术说明不再长期占据主界面
 - 移动端参数区变成底部 Sheet
 
@@ -135,20 +135,76 @@ Prompt 模板、本地增强、撤销仍在 Composer 内，但使用更轻的工
 
 真实浏览器仍需要部署后复核，特别是不同显示分辨率下的视觉比例与交互手感。
 
-## 截图复盘后的视觉收敛 ✅
+## 第一次截图复盘后的视觉收敛 ✅
 
-根据 1536px 桌面截图又完成了一轮以“减少视觉噪声”为目标的修改：
+根据 1536px 桌面截图完成了一轮以“减少视觉噪声”为目标的修改：
 
 1. 顶栏压缩到约 56px，主题 / 任务 / 设置改为图标式入口。
 2. 左 Rail 删除无实际导航意义的 AI 标记，并删除任务 / 设置重复入口，只保留四个工作流和历史。
 3. Canvas 删除重复 Ready 状态，只保留工作流、当前模型、对比和清空两个轻工具。
 4. 空状态移除大面积虚线框与过多说明文字。
-5. Inspector 将 Adapter、model ID、Endpoint、模型诊断等技术信息统一放进“高级与诊断”。
+5. Inspector 将 Adapter、model ID、Endpoint、模型诊断等技术信息统一放进开发者层。
 6. Inspector 默认只强调模型、模型状态和 Adapter-driven 常用参数。
-7. Composer 删除重复模型选择，默认高度压缩到约 54px 输入区 + 48px Generate，并根据内容自动增长。
+7. Composer 删除重复模型选择，默认高度压缩并根据内容自动增长。
 8. Gallery 减少卡片边框，图片结果“编辑 / 生成视频”操作改成桌面 Hover 显示。
 9. 浅色模式统一为 #F6F6F7 页面背景、白色 Inspector、#FAFAFA Canvas 和 Indigo 主强调色。
 10. 整体通过背景层级和留白替代大量边框，降低“API 调试工具”感。
+
+## 第二次截图复盘：A–E 参数优先精修 ✅
+
+日期：2026-08-09
+
+第二张实际部署截图显示整体结构已经稳定，但右侧仍有明显“表单面板”感，底部 Composer 仍可以进一步缩短。因此继续完成 A–E 五项精修：
+
+### A — 页面比例 ✅
+
+- 桌面 Rail 由 64px 收至约 58px。
+- Inspector 在大屏收至约 318px，中等桌面约 300px。
+- 主 Canvas 获得更多横向空间。
+- Workspace gap 收至 8px，减少分栏之间的无效留白。
+
+### B — Inspector 层级 ✅
+
+- 模型状态 Badge 收缩为带 tooltip 的状态圆点。
+- 删除“文生图模型参数 / 常用参数”这类重复层级标题。
+- 普通用户默认只看到模型与基础生成控制。
+
+### C — Prompt Composer ✅
+
+- Prompt 默认高度进一步压至约 52px。
+- 桌面最大自动增长高度约 108px，超出后内部滚动。
+- Generate 收至约 104×46px。
+- Prompt Tools 继续保留，但工具按钮进一步轻量化。
+
+### D — 比例与数量控件 ✅
+
+Adapter schema 仍然是唯一参数来源，但 UI 层会把部分基础控件转换为更适合创作的交互：
+
+- `size / ratio / resolution` Select → 可视化比例 / 清晰度按钮。
+- Qwen 原生尺寸仍保持原值，例如 `1:1 (1328x1328)`；UI 只把它呈现为 `1:1` + `1328 × 1328`，提交值不改变。
+- `count` 数字输入 → `− 1 +` Stepper。
+- 原始 Select / Input 仍保留为隐藏同步源，因此不会复制请求逻辑，也不会改变 Adapter 行为。
+
+### E — 高级 / 开发者参数分层 ✅
+
+Inspector 形成三层结构：
+
+```text
+基础生成参数
+  ↓
+高级设置
+  ↓
+开发者设置
+```
+
+其中：
+
+- 高级设置：Seed、Steps、Guidance、FPS、Frames 等 Adapter advanced 参数。
+- 开发者设置：Endpoint、Extra JSON、Adapter 技术说明、模型检测、视频试用提醒。
+
+这一层只改变可见性和交互，不修改模型请求 payload。
+
+静态审计同步增加：比例按钮、数量 Stepper、基础/高级参数分层、开发者设置存在性检查。
 
 ## 当前文件职责
 
@@ -165,7 +221,7 @@ js/ui/creation-tools.js
 
 studio-extras.css
 js/ui/studio-extras.js
-  最终视觉收敛、图片结果直送、Prompt 自动高度、任务角标、快捷键、设置入口和轻量 Toast
+  最终视觉收敛、比例/清晰度按钮、数量 Stepper、Prompt 自动高度、结果直送、任务角标、快捷键和设置入口
 ```
 
 这一轮不会重新引入 `xxx-hotfix.js`。界面层继续按照单一职责拆分，底层生成仍只有现有 Registry / Adapter / Runtime 一套逻辑。
