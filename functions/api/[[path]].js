@@ -8,7 +8,13 @@ export async function onRequest(context) {
     });
   }
 
-  const path = (params.path || []).join("/");
+  const rawSegments = Array.isArray(params.path)
+    ? params.path
+    : String(params.path || "").split("/").filter(Boolean);
+  if (rawSegments.some((segment) => !isSafeSegment(segment))) {
+    return jsonError("Invalid API path", 400);
+  }
+  const path = rawSegments.map((segment) => encodeURIComponent(segment)).join("/");
   const targetUrl = new URL(`https://ai.gitee.com/v1/${path}`);
   const reqUrl = new URL(request.url);
   targetUrl.search = reqUrl.search;
@@ -51,6 +57,20 @@ export async function onRequest(context) {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: respHeaders,
+  });
+}
+
+function isSafeSegment(segment) {
+  const value = String(segment || "");
+  if (!value || value === "." || value === "..") return false;
+  if (value.includes("/") || value.includes("\\") || value.includes("\0")) return false;
+  return true;
+}
+
+function jsonError(message, status) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders() },
   });
 }
 
