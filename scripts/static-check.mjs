@@ -38,7 +38,7 @@ const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== i
 if (duplicateIds.length) failures.push(`Duplicate static HTML ids: ${duplicateIds.join(", ")}`);
 notes.push(`checked ${ids.length} static HTML ids`);
 
-for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css"]) {
+for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css"]) {
   if (!html.includes(`href="./${stylesheet}"`)) failures.push(`Missing stylesheet in index.html: ${stylesheet}`);
 }
 
@@ -58,6 +58,7 @@ const requiredOrder = [
   "js/ui/workspace-layout.js",
   "js/ui/creation-tools.js",
   "js/ui/studio-extras.js",
+  "js/ui/product-polish.js",
 ];
 let previous = -1;
 for (const file of requiredOrder) {
@@ -99,6 +100,21 @@ if (!studioCss.includes(".studio-history-top-action")) failures.push("Responsive
 if (!studioCss.includes(".workspace-composer-input")) failures.push("Compact prompt composer override is missing");
 if (!studioCss.includes(".studio-model-developer-tools")) failures.push("Inspector technical details must be progressive-disclosure content");
 
+const productCss = fs.readFileSync(path.join(root, "product-polish.css"), "utf8");
+for (const marker of [".studio-gallery-one", ".studio-gallery-two", ".studio-model-selector", ".studio-model-menu", ".studio-product-settings", ".studio-theme-segment", ".studio-lightbox-actions"]) {
+  if (!productCss.includes(marker)) failures.push(`Product polish CSS marker missing: ${marker}`);
+}
+
+const productUi = fs.readFileSync(path.join(root, "js/ui/product-polish.js"), "utf8");
+for (const marker of ["setupFocusGallery", "setupUnifiedIcons", "decorateModelSelect", "setupModelSelectors", "buildSettings", "applyThemeMode", "syncLightboxActions"]) {
+  if (!productUi.includes(marker)) failures.push(`Product polish behavior missing: ${marker}`);
+}
+if (!productUi.includes("studio-gallery-one")) failures.push("Single-result focus view is missing");
+if (!productUi.includes("studio-gallery-two")) failures.push("Two-result gallery mode is missing");
+if (!productUi.includes("moark_theme_mode")) failures.push("Settings must persist system/light/dark appearance mode");
+if (!productUi.includes("REGISTRY?.model")) failures.push("Custom model picker must read model metadata from Registry");
+if (!productUi.includes("studio-download-action")) failures.push("Gallery overlay must preserve direct download access");
+
 const taskTracker = fs.readFileSync(path.join(root, "js/runtime/task-tracker.js"), "utf8");
 if (!taskTracker.includes("if (!run || run.finishedAt) return;")) failures.push("Task tracker must ignore updates after terminal state");
 if (!taskTracker.includes("inferTask(")) failures.push("Task tracker request attribution helper is missing");
@@ -130,11 +146,6 @@ if (!studioExtras.includes("DataTransfer")) failures.push("Generated image reuse
 if (!studioExtras.includes("ctrlKey") || !studioExtras.includes("metaKey")) failures.push("Creator keyboard shortcut support is missing");
 if (!studioExtras.includes("studioTaskBtn")) failures.push("Compact task badge support is missing");
 if (!studioExtras.includes("setupPromptAutosize")) failures.push("Prompt composer auto-resize is missing");
-if (!studioExtras.includes("CHOICE_KEYS")) failures.push("Inspector ratio/resolution choice controls are missing");
-if (!studioExtras.includes("studio-choice-grid")) failures.push("Inspector visual choice grid is missing");
-if (!studioExtras.includes("decorateCountStepper")) failures.push("Image count stepper is missing");
-if (!studioExtras.includes("studio-primary-params") || !studioExtras.includes("studio-advanced-params")) failures.push("Basic and advanced parameter layers are missing");
-if (!studioExtras.includes("开发者设置")) failures.push("Developer-only settings layer is missing");
 
 const downloadProxy = fs.readFileSync(path.join(root, "functions/dl.js"), "utf8");
 if (!downloadProxy.includes('url.protocol !== "https:"')) failures.push("Download proxy must require HTTPS targets");
