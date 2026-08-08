@@ -40,9 +40,15 @@
     return Math.max(min, Math.min(max, n));
   }
 
+  function headerValue(headers, name) {
+    if (!headers) return "";
+    if (headers instanceof Headers) return headers.get(name) || "";
+    return String(headers[name] || headers[name.toLowerCase()] || headers[name.toUpperCase()] || "");
+  }
+
   function parseJsonBody(init) {
     if (!init || typeof init.body !== "string") return null;
-    const type = String(init.headers?.["Content-Type"] || init.headers?.["content-type"] || "");
+    const type = headerValue(init.headers, "Content-Type");
     if (type && !type.includes("application/json")) return null;
     try {
       const obj = JSON.parse(init.body);
@@ -67,9 +73,11 @@
     return last || nativeFetch(input, init);
   }
 
-  function inferTaskForJson(url, modelId) {
+  function inferTaskForJson(url, body) {
     if (/\/api\/images\/generations(?:\?|$)/.test(url)) return "t2i";
-    if (/\/api\/async\/videos\//.test(url)) return REGISTRY.model("i2v", modelId) ? "i2v" : "t2v";
+    if (/\/api\/async\/videos\//.test(url)) {
+      return body?.image || body?.first_frame || body?.image_url ? "i2v" : "t2v";
+    }
     return null;
   }
 
@@ -77,7 +85,7 @@
     const url = typeof input === "string" ? input : String(input?.url || "");
     const body = parseJsonBody(init);
     if (!body?.model) return nativeFetch(input, init);
-    const task = inferTaskForJson(url, String(body.model));
+    const task = inferTaskForJson(url, body);
     if (!task) return nativeFetch(input, init);
     const adapter = ADAPTERS.forModel(task, String(body.model));
     if (!adapter?.jsonVariants) return nativeFetch(input, init);
@@ -224,7 +232,16 @@
     const select = $(SELECT_IDS[task]); if (!select) return;
     for (const option of select.options) { if (!option.dataset.mmBaseText) option.dataset.mmBaseText = option.textContent.replace(/^[✅❌🧪⚙️🟡]\s*/, ""); option.textContent = `${statusIcon(effectiveStatus(task, option.value).state)} ${option.dataset.mmBaseText}`; }
   }
-  function refreshHealth(task) { const el = $(`mmHealth-${task}`); if (!el) return; const st = effectiveStatus(task, currentModelId(task)); el.className = `mm-health mm-health-${st.state}`; el.innerHTML = `<strong>${statusIcon(st.state)} ${st.text}</strong><span>${st.detail}</span>`; }
+  function refreshHealth(task) {
+    const el = $(`mmHealth-${task}`); if (!el) return;
+    const st = effectiveStatus(task, currentModelId(task));
+    el.className = `mm-health mm-health-${st.state}`;
+    const strong = document.createElement("strong");
+    strong.textContent = `${statusIcon(st.state)} ${st.text}`;
+    const span = document.createElement("span");
+    span.textContent = st.detail || "";
+    el.replaceChildren(strong, span);
+  }
   function inspectNewOutput(before) { const items = [...document.querySelectorAll("#output .item")].filter((item) => !before.has(item)); const error = items.find((item) => /错误|失败|error|failed/i.test(item.querySelector("h3")?.textContent || "")); const media = items.find((item) => item.querySelector("img,video")); if (error) return { state: "fail", detail: error.querySelector(".meta")?.textContent || error.textContent.slice(0,180) }; if (media) return { state: "pass", detail: "最近一次完整生成成功" }; return { state: "unknown", detail: "未发现明确结果" }; }
 
   function addHealthRow(task, buttonText, noteText) {
