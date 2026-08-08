@@ -12,6 +12,10 @@ export async function onRequest(context) {
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.set("cache-control", "no-store, no-cache, must-revalidate");
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("x-frame-options", "DENY");
+  headers.set("referrer-policy", "no-referrer");
+  headers.set("permissions-policy", "camera=(), microphone=(), geolocation=(), payment=()");
 
   return new Response(await response.text(), {
     status: response.status,
