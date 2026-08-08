@@ -33,9 +33,32 @@
     return `run-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }
 
+  function compactValue(value, depth = 0) {
+    if (depth > 5) return "[depth truncated]";
+    if (typeof value === "string") {
+      if (/^data:[^;]+;base64,/i.test(value)) return `[base64 data omitted · ${value.length} chars]`;
+      if (value.length > 4000) return `${value.slice(0, 4000)}… [truncated ${value.length - 4000} chars]`;
+      return value;
+    }
+    if (Array.isArray(value)) return value.slice(0, 20).map((item) => compactValue(item, depth + 1));
+    if (value && typeof value === "object") {
+      const out = {};
+      for (const [key, item] of Object.entries(value)) {
+        if (/^(b64_json|base64|image_base64|video_base64)$/i.test(key) && typeof item === "string") {
+          out[key] = `[base64 omitted · ${item.length} chars]`;
+        } else {
+          out[key] = compactValue(item, depth + 1);
+        }
+      }
+      return out;
+    }
+    return value;
+  }
+
   function snapshot(run) {
     return {
       ...run,
+      lastRaw: compactValue(run.lastRaw),
       timeline: run.timeline.map((item) => ({ ...item })),
       attempts: run.attempts.map((item) => ({ ...item })),
     };
@@ -109,9 +132,11 @@
     run.stageLabel = label;
     run.message = message;
     run.updatedAt = now();
-    Object.assign(run, extra);
-    addTimeline(run, stage, label, message, extra.timelineExtra || {});
-    emit("update", run, extra);
+    const safeExtra = { ...extra };
+    if ("lastRaw" in safeExtra) safeExtra.lastRaw = compactValue(safeExtra.lastRaw);
+    Object.assign(run, safeExtra);
+    addTimeline(run, stage, label, message, safeExtra.timelineExtra || {});
+    emit("update", run, safeExtra);
   }
 
   function finish(run, state, message = "") {
@@ -129,7 +154,7 @@
     if (!run || run.finishedAt) return;
     const message = String(error?.message || error || "生成失败");
     run.lastError = message;
-    if (raw !== null && raw !== undefined) run.lastRaw = raw;
+    if (raw !== null && raw !== undefined) run.lastRaw = compactValue(raw);
     finish(run, "failed", message);
   }
 
@@ -180,7 +205,8 @@
     try {
       const text = await response.clone().text();
       if (!text) return null;
-      try { return JSON.parse(text); } catch { return { _text: text.slice(0, 3000) }; }
+      try { return compactValue(JSON.parse(text)); }
+      catch { return { _text: text.length > 4000 ? `${text.slice(0, 4000)}… [truncated]` : text }; }
     } catch { return null; }
   }
 
@@ -228,7 +254,7 @@
         const state = String(raw?.status || raw?.state || "").toLowerCase();
         if (state === "success") update(run, "server-success", "服务端生成完成", "正在获取生成结果", { lastRaw: raw });
         else if (["failed", "cancelled"].includes(state)) {
-          run.lastRaw = raw;
+          run.lastRaw = compactValue(raw);
           run.lastError = rawMessage(raw) || `任务状态：${state}`;
           update(run, "server-failed", "服务端任务失败", run.lastError, { lastRaw: raw });
         }
@@ -274,7 +300,7 @@
       if (run.attempts.length > 20) run.attempts.splice(0, run.attempts.length - 20);
 
       if (!response.ok) {
-        run.lastRaw = raw;
+        run.lastRaw = compactValue(raw);
         run.lastError = attempt.message || `HTTP ${response.status}`;
         update(run, "retrying", "接口参数不兼容，准备重试", `${endpoint} 返回 HTTP ${response.status}${attempt.message ? ` · ${attempt.message}` : ""}`, { lastRaw: raw });
         emit("attempt", run, attempt);
