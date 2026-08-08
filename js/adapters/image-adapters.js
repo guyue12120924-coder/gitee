@@ -103,15 +103,15 @@
     parameters: [
       {
         key: "taskTypes",
-        label: "任务类型 Task Types",
+        label: "编辑方式",
         type: "checkbox-group",
         sourceName: "editTaskType",
         options: ["id", "style", "pose", "layout", "color", "background"],
         span: "full",
         help: "可多选；保持与 Qwen 编辑接口的 task_types 一致。"
       },
-      { key: "steps", label: "推理步数", type: "number", sourceId: "editSteps", min: 1, max: 50, step: 1, default: 4 },
-      { key: "guidance", label: "Guidance Scale", type: "number", sourceId: "editGuidance", min: 0, max: 10, step: 0.5, default: 1 },
+      { key: "steps", label: "推理步数", type: "number", sourceId: "editSteps", min: 1, max: 50, step: 1, default: 4, advanced: true },
+      { key: "guidance", label: "Guidance Scale", type: "number", sourceId: "editGuidance", min: 0, max: 10, step: 0.5, default: 1, advanced: true },
       { key: "openUrl", label: "完成后打开 file_url", type: "checkbox", sourceId: "editOpenUrl", advanced: true }
     ]
   });
@@ -121,7 +121,7 @@
     defaultEndpoint: "async/images/edits",
     uiProfile: "standard",
     parameters: [
-      { key: "openUrl", label: "完成后打开 file_url", type: "checkbox", sourceId: "editOpenUrl" }
+      { key: "openUrl", label: "完成后打开 file_url", type: "checkbox", sourceId: "editOpenUrl", advanced: true }
     ]
   });
 })();
