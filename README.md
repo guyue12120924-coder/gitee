@@ -13,6 +13,7 @@
 - 可手动尝试 `GET /v1/models` 同步当前 Token 可见模型；该接口未作为必需能力，失败不影响内置模型和自定义模型
 - 模型参数由 Adapter schema 动态生成
 - 生成任务中心显示请求、任务创建、轮询、下载、成功/失败和调试信息
+- 完成任务自动写入浏览器生成历史，可筛选、搜索、导出、删除和复用参数
 - 生成结果直接在网页展示并提供下载
 
 ## 内置模型
@@ -121,7 +122,7 @@ Cloudflare Pages Function
 GET https://ai.gitee.com/v1/models
 ```
 
-Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。第二阶段后，自动同步只补充可安全归类的图像模型；普通视频模型继续由本地 Registry 精选，避免把数字人或不匹配 I2V/T2V 的模型误加入下拉框。
+Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能力，因此不会在页面加载时自动请求。若接口或 Token 不支持，页面会继续使用内置精选模型；也可以直接使用“自定义模型”。自动同步只补充可安全归类的图像模型；普通视频模型继续由本地 Registry 精选，避免把数字人或不匹配 I2V/T2V 的模型误加入下拉框。
 
 ## 自定义模型
 
@@ -161,7 +162,7 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 ## 模型驱动参数 UI
 
-第三阶段以后，模型参数不再依赖固定展示的 Wan / Hunyuan 表单，而由 Adapter 的 `parameters` schema 决定。
+模型参数不再依赖固定展示的 Wan / Hunyuan 表单，而由 Adapter 的 `parameters` schema 决定。
 
 例如：
 
@@ -175,7 +176,7 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 ## 生成任务与错误中心
 
-第四阶段增加实时生成任务中心。每次点击文生图、编辑、图生视频或文生视频的执行按钮，都会创建一个本地任务记录，并跟踪：
+每次点击文生图、编辑、图生视频或文生视频的执行按钮，都会创建一个本地任务记录，并跟踪：
 
 ```text
 准备参数
@@ -209,13 +210,45 @@ Gitee 当前公开文档未把该接口作为本项目必须依赖的稳定能�
 
 “停止本地等待”只会停止当前网页继续轮询，不会向 Gitee 发出远端取消任务请求，因此服务端任务可能仍继续生成。
 
+## 持久化生成历史
+
+第五阶段新增浏览器本地历史记录。任务进入成功、失败或停止等待状态后，会自动保存到 IndexedDB，默认最多保留 100 条。
+
+历史记录包含：
+
+- 任务类型与模型 ID
+- Prompt
+- Adapter 参数快照
+- 自定义 Endpoint / 附加 JSON
+- 输入文件的文件名、类型和大小（只保存元数据，不保存文件内容）
+- 成功 / 失败 / 停止等待状态
+- 生成耗时
+- request / polling 次数
+- `task_id`
+- 最后错误与请求尝试摘要
+- API 响应中可恢复的结果 URL
+
+历史中心支持：
+
+- 按任务类型筛选
+- 按成功 / 失败状态筛选
+- 按模型、Prompt、`task_id` 搜索
+- 复制 Prompt / `task_id`
+- 删除单条或清空全部历史
+- 导出 JSON
+- “再次生成”：恢复模型、Prompt、模型参数、Endpoint 与附加 JSON
+
+对于文生图和文生视频，历史参数恢复后可确认并直接重新提交；对于图像编辑和图生视频，由于浏览器安全限制不能自动恢复本地文件，页面会恢复其它参数并提示重新上传图片。
+
+历史模块不会保存 API Key，也不会把生成出的图片或视频文件本体写入 IndexedDB。若 API 返回的结果 URL 后续失效，历史中的“打开结果”也可能无法继续访问。
+
 ## 运行时验证说明
 
 模型“在 Gitee Serverless 模型广场存在”不等于“所有模型共享完全相同的请求字段”。原项目的 `Wan2_2-I2V-A14B` 与 `HunyuanVideo-1.5` 有已有调用逻辑；Vidu、LTX、Wan 2.7、HappyHorse 等新增模型仍应以 Gitee 当前模型页提供的 API 示例为最终依据。页面会显示具体 HTTP 错误，便于继续做模型级适配。
 
 ## 前端运行时结构
 
-第四阶段完成后，前端加载顺序固定为：
+第五阶段完成后，前端加载顺序固定为：
 
 ```text
 app.js
@@ -236,7 +269,11 @@ js/ui/model-parameter-ui.js
   ↓
 js/runtime/task-tracker.js
   ↓
+js/storage/history-store.js
+  ↓
 js/ui/task-center.js
+  ↓
+js/ui/history-center.js
 ```
 
 职责划分：
@@ -250,7 +287,9 @@ js/ui/task-center.js
 - `js/runtime/model-runtime.js`：健康状态、请求重试、时长校正、Loading 和 Wan 分段等运行时能力
 - `js/ui/model-parameter-ui.js`：由 Adapter schema 动态生成参数面板
 - `js/runtime/task-tracker.js`：跟踪生成按钮、API 请求、task_id、轮询、结果下载和任务状态
+- `js/storage/history-store.js`：IndexedDB 历史存储、100 条上限与 localStorage 降级
 - `js/ui/task-center.js`：实时进度卡、错误解释、请求尝试、复制 task_id / 错误、重新生成和停止本地等待
+- `js/ui/history-center.js`：历史筛选、搜索、导出、删除和参数复用
 
 第一阶段删除的 `multi-model-hotfix.js`、`model-workbench.js`、`video-duration-fix.js`、`video-catalog-fix.js` 保持删除状态。
 
@@ -307,7 +346,9 @@ wrangler pages dev .
 - `js/runtime/model-runtime.js`：统一模型运行时
 - `js/ui/model-parameter-ui.js`：模型驱动参数 UI
 - `js/runtime/task-tracker.js`：生成任务生命周期跟踪
+- `js/storage/history-store.js`：持久化生成历史
 - `js/ui/task-center.js`：任务进度与错误中心
+- `js/ui/history-center.js`：历史记录中心
 - `styles.css`：页面基础样式
 - `functions/api/[[path]].js`：Gitee API 代理
 - `functions/dl.js`：下载代理
