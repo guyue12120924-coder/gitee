@@ -50,329 +50,129 @@
   };
 
   const ENHANCE = {
-    t2i: {
-      zh: "主体清晰，构图完整，细节丰富，自然光影，真实材质，层次分明，画面干净，高质量",
-      en: "clear subject, complete composition, rich detail, natural lighting, realistic materials, strong depth, clean image, high quality",
-    },
-    edit: {
-      zh: "保持未要求修改的主体身份、构图、视角和光照一致，只修改指定区域，边缘自然，纹理连续，不引入额外物体",
-      en: "preserve all unrequested subject identity, composition, viewpoint and lighting; modify only the specified region, keep edges seamless and texture continuous, introduce no unrelated objects",
-    },
-    i2v: {
-      zh: "保持主体身份与服装一致，动作自然连贯，镜头运动平滑，物理运动合理，避免闪烁、形变和画面跳变",
-      en: "preserve subject identity and clothing, natural continuous motion, smooth camera movement, physically plausible movement, avoid flicker deformation and abrupt frame changes",
-    },
-    t2v: {
-      zh: "镜头语言明确，动作连续自然，构图稳定，光影统一，运动流畅，细节清晰，避免闪烁、形变和突变",
-      en: "clear camera language, continuous natural action, stable composition, consistent lighting, fluid motion, crisp detail, avoid flicker deformation and abrupt changes",
-    },
+    t2i: { zh: "主体清晰，构图完整，细节丰富，自然光影，真实材质，层次分明，画面干净，高质量", en: "clear subject, complete composition, rich detail, natural lighting, realistic materials, strong depth, clean image, high quality" },
+    edit: { zh: "保持未要求修改的主体身份、构图、视角和光照一致，只修改指定区域，边缘自然，纹理连续，不引入额外物体", en: "preserve all unrequested subject identity, composition, viewpoint and lighting; modify only the specified region, keep edges seamless and texture continuous, introduce no unrelated objects" },
+    i2v: { zh: "保持主体身份与服装一致，动作自然连贯，镜头运动平滑，物理运动合理，避免闪烁、形变和画面跳变", en: "preserve subject identity and clothing, natural continuous motion, smooth camera movement, physically plausible movement, avoid flicker deformation and abrupt frame changes" },
+    t2v: { zh: "镜头语言明确，动作连续自然，构图稳定，光影统一，运动流畅，细节清晰，避免闪烁、形变和突变", en: "clear camera language, continuous natural action, stable composition, consistent lighting, fluid motion, crisp detail, avoid flicker deformation and abrupt changes" },
   };
 
-  function hasChinese(text) {
-    return /[\u3400-\u9fff]/.test(text || "");
-  }
-
-  function dispatchInput(el) {
-    if (!el) return;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-    el.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  function pushUndo(task, value) {
-    const stack = undoStacks.get(task) || [];
-    if (!stack.length || stack[stack.length - 1] !== value) stack.push(value);
-    while (stack.length > 8) stack.shift();
-    undoStacks.set(task, stack);
-  }
-
-  function setPrompt(task, value, remember = true) {
-    const input = $(TASKS[task]?.promptId);
-    if (!input) return;
-    if (remember) pushUndo(task, input.value);
-    input.value = value;
-    dispatchInput(input);
-  }
-
-  function appendTemplate(task, template) {
-    const input = $(TASKS[task]?.promptId);
-    if (!input) return;
-    const value = hasChinese(input.value) ? template.zh : (input.value.trim() ? template.en : template.zh);
-    const current = input.value.trim();
-    setPrompt(task, current ? `${current}${hasChinese(current) ? "，" : ", "}${value}` : value);
-  }
-
-  function enhancePrompt(task) {
-    const input = $(TASKS[task]?.promptId);
-    if (!input) return;
-    const current = input.value.trim();
-    if (!current) {
-      window.alert("请先输入一个基础 Prompt，再使用提示词增强。");
-      return;
-    }
-    const suffix = hasChinese(current) ? ENHANCE[task].zh : ENHANCE[task].en;
-    const normalized = current.toLowerCase();
-    const sample = suffix.split(/[，,]/)[0].trim().toLowerCase();
-    if (sample && normalized.includes(sample)) return;
-    setPrompt(task, `${current}${hasChinese(current) ? "。" : ". "}${suffix}`);
-  }
-
-  function undoPrompt(task) {
-    const stack = undoStacks.get(task) || [];
-    if (!stack.length) return;
-    const previous = stack.pop();
-    undoStacks.set(task, stack);
-    setPrompt(task, previous, false);
-  }
+  function hasChinese(text) { return /[\u3400-\u9fff]/.test(text || ""); }
+  function dispatchInput(el) { if (!el) return; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); }
+  function pushUndo(task, value) { const stack = undoStacks.get(task) || []; if (!stack.length || stack[stack.length - 1] !== value) stack.push(value); while (stack.length > 8) stack.shift(); undoStacks.set(task, stack); }
+  function setPrompt(task, value, remember = true) { const input = $(TASKS[task]?.promptId); if (!input) return; if (remember) pushUndo(task, input.value); input.value = value; dispatchInput(input); }
+  function appendTemplate(task, template) { const input = $(TASKS[task]?.promptId); if (!input) return; const value = hasChinese(input.value) ? template.zh : (input.value.trim() ? template.en : template.zh); const current = input.value.trim(); setPrompt(task, current ? `${current}${hasChinese(current) ? "，" : ", "}${value}` : value); }
+  function enhancePrompt(task) { const input = $(TASKS[task]?.promptId); if (!input) return; const current = input.value.trim(); if (!current) return window.alert("请先输入一个基础 Prompt，再使用提示词增强。"); const suffix = hasChinese(current) ? ENHANCE[task].zh : ENHANCE[task].en; const sample = suffix.split(/[，,]/)[0].trim().toLowerCase(); if (sample && current.toLowerCase().includes(sample)) return; setPrompt(task, `${current}${hasChinese(current) ? "。" : ". "}${suffix}`); }
+  function undoPrompt(task) { const stack = undoStacks.get(task) || []; if (!stack.length) return; const previous = stack.pop(); undoStacks.set(task, stack); setPrompt(task, previous, false); }
 
   function createPromptTools(task) {
-    const conf = TASKS[task];
-    const input = $(conf.promptId);
-    const panel = $(conf.panelId);
+    const conf = TASKS[task], input = $(conf.promptId), panel = $(conf.panelId);
     if (!input || !panel || panel.querySelector(`[data-prompt-tools="${task}"]`)) return;
-
     const box = document.createElement("div");
-    box.className = "prompt-toolbox";
-    box.dataset.promptTools = task;
-    box.innerHTML = `
-      <div class="prompt-toolbox-head">
-        <span class="prompt-toolbox-label">Prompt Tools</span>
-        <div class="prompt-toolbox-actions">
-          <button type="button" class="btn pt-templates">模板</button>
-          <button type="button" class="btn pt-enhance">本地增强</button>
-          <button type="button" class="btn pt-undo">撤销</button>
-        </div>
-      </div>
-      <div class="prompt-template-bank"></div>
-      <div class="prompt-toolbox-note">“本地增强”只在浏览器中补充任务相关描述，不会调用额外 AI API，也不会产生额外请求费用。</div>
-    `;
+    box.className = "prompt-toolbox"; box.dataset.promptTools = task;
+    box.innerHTML = `<div class="prompt-toolbox-head"><span class="prompt-toolbox-label">Prompt Tools</span><div class="prompt-toolbox-actions"><button type="button" class="btn pt-templates">模板</button><button type="button" class="btn pt-enhance">本地增强</button><button type="button" class="btn pt-undo">撤销</button></div></div><div class="prompt-template-bank"></div><div class="prompt-toolbox-note">“本地增强”只在浏览器中补充任务相关描述，不会调用额外 AI API，也不会产生额外请求费用。</div>`;
     input.insertAdjacentElement("beforebegin", box);
-
     const bank = box.querySelector(".prompt-template-bank");
     for (const template of TEMPLATES[task] || []) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "prompt-template";
-      const strong = document.createElement("strong");
-      strong.textContent = template.title;
-      const span = document.createElement("span");
-      span.textContent = template.hint;
-      button.append(strong, span);
-      button.addEventListener("click", () => appendTemplate(task, template));
-      bank.appendChild(button);
+      const button = document.createElement("button"); button.type = "button"; button.className = "prompt-template";
+      const strong = document.createElement("strong"); strong.textContent = template.title;
+      const span = document.createElement("span"); span.textContent = template.hint;
+      button.append(strong, span); button.addEventListener("click", () => appendTemplate(task, template)); bank.appendChild(button);
     }
-    box.querySelector(".pt-templates")?.addEventListener("click", () => {
-      bank.classList.toggle("is-open");
-      box.querySelector(".prompt-toolbox-note")?.classList.toggle("is-visible", bank.classList.contains("is-open"));
-    });
+    box.querySelector(".pt-templates")?.addEventListener("click", () => { bank.classList.toggle("is-open"); box.querySelector(".prompt-toolbox-note")?.classList.toggle("is-visible", bank.classList.contains("is-open")); });
     box.querySelector(".pt-enhance")?.addEventListener("click", () => enhancePrompt(task));
     box.querySelector(".pt-undo")?.addEventListener("click", () => undoPrompt(task));
   }
 
-  function activeTask() {
-    return FUNCTION_TO_TASK[$("modelSel")?.value] || "t2i";
-  }
-
-  function compareModels() {
-    const models = REGISTRY.task("t2i")?.models || [];
-    const preferred = models.filter((model) => ["recommended", "fast"].includes(model.group));
-    return preferred.slice(0, 8);
-  }
-
-  function selectedCompareModels(panel) {
-    return [...panel.querySelectorAll('input[name="compareModel"]:checked')].map((input) => input.value);
-  }
-
-  function enforceCompareLimit(panel, changed) {
-    const selected = selectedCompareModels(panel);
-    if (selected.length <= 3) return;
-    changed.checked = false;
-    window.alert("一次最多对比 3 个模型，避免误提交过多 API 请求。");
-  }
+  function activeTask() { return FUNCTION_TO_TASK[$("modelSel")?.value] || "t2i"; }
+  function compareModels() { const models = REGISTRY.task("t2i")?.models || []; return models.filter((model) => ["recommended", "fast"].includes(model.group)).slice(0, 8); }
+  function selectedCompareModels(panel) { return [...panel.querySelectorAll('input[name="compareModel"]:checked')].map((input) => input.value); }
+  function enforceCompareLimit(panel, changed) { if (selectedCompareModels(panel).length <= 3) return; changed.checked = false; window.alert("一次最多对比 3 个模型，避免误提交过多 API 请求。"); }
 
   function waitForRun(modelId, trigger, timeoutMs = 10 * 60 * 1000) {
     return new Promise((resolve, reject) => {
-      let runId = null;
-      let finished = false;
+      let runId = null, finished = false;
       const startedAt = Date.now();
       const unsubscribe = TRACKER.subscribe(({ type, run }) => {
-        if (!runId && type === "start" && run.task === "t2i" && run.modelId === modelId && run.startedAt >= startedAt - 200) {
-          runId = run.id;
-        }
-        if (runId && run.id === runId && type === "finish") {
-          finished = true;
-          unsubscribe();
-          clearTimeout(timer);
-          resolve(run);
-        }
+        if (!runId && type === "start" && run.task === "t2i" && run.modelId === modelId && run.startedAt >= startedAt - 200) runId = run.id;
+        if (runId && run.id === runId && type === "finish") { finished = true; unsubscribe(); clearTimeout(timer); resolve(run); }
       });
-      const timer = setTimeout(() => {
-        if (finished) return;
-        unsubscribe();
-        reject(new Error(`${modelId} 对比等待超时；为避免重复提交，已停止后续模型对比。`));
-      }, timeoutMs);
-      try { trigger(); }
-      catch (error) {
-        unsubscribe();
-        clearTimeout(timer);
-        reject(error);
-      }
+      const timer = setTimeout(() => { if (finished) return; unsubscribe(); reject(new Error(`${modelId} 对比等待超时；为避免重复提交，已停止后续模型对比。`)); }, timeoutMs);
+      try { trigger(); } catch (error) { unsubscribe(); clearTimeout(timer); reject(error); }
     });
   }
-
-  function newOutputItems(before) {
-    return [...document.querySelectorAll("#output .item")].filter((node) => !before.has(node));
-  }
+  function newOutputItems(before) { return [...document.querySelectorAll("#output .item")].filter((node) => !before.has(node)); }
 
   async function runComparison(panel) {
-    const prompt = $("zPrompt")?.value?.trim();
-    if (!prompt) {
-      window.alert("请先填写文生图 Prompt。");
-      return;
-    }
-    const models = selectedCompareModels(panel);
-    if (models.length < 2) {
-      window.alert("请至少选择 2 个模型进行对比。");
-      return;
-    }
-    const select = $("mmT2IModel");
-    const button = $("btnZRun");
-    if (!select || !button) return;
-    const available = models.filter((id) => [...select.options].some((option) => option.value === id));
-    if (available.length < 2) {
-      window.alert("可用模型不足 2 个，请刷新页面后重试。");
-      return;
-    }
-    const ok = window.confirm(`将按顺序真实提交 ${available.length} 次文生图 API 请求，并可能消耗体验额度或产生费用。\n\n模型：${available.join("、")}\n\n是否继续？`);
-    if (!ok) return;
+    const prompt = $("zPrompt")?.value?.trim(); if (!prompt) return window.alert("请先填写文生图 Prompt。");
+    const models = selectedCompareModels(panel); if (models.length < 2) return window.alert("请至少选择 2 个模型进行对比。");
+    const select = $("mmT2IModel"), button = $("btnZRun"); if (!select || !button) return;
+    const available = models.filter((id) => [...select.options].some((option) => option.value === id)); if (available.length < 2) return window.alert("可用模型不足 2 个，请刷新页面后重试。");
+    if (!window.confirm(`将按顺序真实提交 ${available.length} 次文生图 API 请求，并可能消耗体验额度或产生费用。\n\n模型：${available.join("、")}\n\n是否继续？`)) return;
 
-    const runButton = panel.querySelector(".model-compare-run");
-    const status = panel.querySelector(".model-compare-status");
-    const originalModel = select.value;
-    const nInput = $("zN");
-    const originalN = nInput?.value;
-    panel.classList.add("model-compare-running");
-    if (runButton) runButton.disabled = true;
-    if (nInput) { nInput.value = "1"; dispatchInput(nInput); }
-
+    const runButton = panel.querySelector(".model-compare-run"), status = panel.querySelector(".model-compare-status");
+    const originalModel = select.value, nInput = $("zN"), originalN = nInput?.value, resolutionInput = $("zRes"), originalResolution = resolutionInput?.value;
+    panel.classList.add("model-compare-running"); if (runButton) runButton.disabled = true; if (nInput) { nInput.value = "1"; dispatchInput(nInput); }
     const results = [];
     try {
       for (let i = 0; i < available.length; i++) {
-        const modelId = available[i];
-        if (status) status.textContent = `${i + 1}/${available.length} 正在生成 ${modelId}…`;
-        select.value = modelId;
-        dispatchInput(select);
-        await new Promise((resolve) => setTimeout(resolve, 90));
+        const modelId = available[i]; if (status) status.textContent = `${i + 1}/${available.length} 正在生成 ${modelId}…`;
+        select.value = modelId; dispatchInput(select); await new Promise((resolve) => setTimeout(resolve, 90));
         const before = new Set(document.querySelectorAll("#output .item"));
         let run;
-        try {
-          run = await waitForRun(modelId, () => button.click());
-        } catch (error) {
-          results.push({ modelId, state: "timeout", message: String(error.message || error) });
-          if (status) status.textContent = String(error.message || error);
-          break;
-        }
+        try { run = await waitForRun(modelId, () => button.click()); }
+        catch (error) { results.push({ modelId, state: "timeout", message: String(error.message || error) }); if (status) status.textContent = String(error.message || error); break; }
         for (const item of newOutputItems(before)) item.classList.add("compare-result-item");
         results.push({ modelId, state: run.state, message: run.message || "" });
       }
     } finally {
-      select.value = originalModel;
-      dispatchInput(select);
+      select.value = originalModel; dispatchInput(select);
+      await new Promise((resolve) => setTimeout(resolve, 70));
+      if (resolutionInput && originalResolution && [...resolutionInput.options].some((option) => option.value === originalResolution)) { resolutionInput.value = originalResolution; dispatchInput(resolutionInput); }
       if (nInput && originalN != null) { nInput.value = originalN; dispatchInput(nInput); }
-      panel.classList.remove("model-compare-running");
-      if (runButton) runButton.disabled = false;
+      panel.classList.remove("model-compare-running"); if (runButton) runButton.disabled = false;
     }
-
-    if (status) {
-      const summary = results.map((item) => `${item.state === "success" ? "✅" : "❌"} ${item.modelId}`).join(" · ");
-      status.textContent = summary || "对比未产生结果。";
-    }
+    if (status) { const summary = results.map((item) => `${item.state === "success" ? "✅" : "❌"} ${item.modelId}`).join(" · "); status.textContent = summary || "对比未产生结果。"; }
   }
 
   function createComparePanel() {
     if ($("modelComparePanel")) return;
-    const outputCard = $("output")?.closest(".card");
-    if (!outputCard) return;
-    const panel = document.createElement("section");
-    panel.id = "modelComparePanel";
-    panel.className = "model-compare-panel";
-    panel.innerHTML = `
-      <div class="model-compare-head">
-        <div><div class="model-compare-title">文生图模型对比</div><div class="model-compare-sub">使用同一个 Prompt 顺序调用 2–3 个模型，结果直接进入右侧 Output 与生成历史。每个模型都会提交真实 API 请求。</div></div>
-      </div>
-      <div class="model-compare-models"></div>
-      <div class="model-compare-footer"><div class="model-compare-status">建议优先比较已验证或推荐模型。</div><button type="button" class="btn primary model-compare-run">开始对比</button></div>
-    `;
-    const anchor = $("workspacePreviewSummary") || outputCard.firstChild;
-    if (anchor?.nextSibling) outputCard.insertBefore(panel, anchor.nextSibling);
-    else outputCard.appendChild(panel);
-
-    const modelsBox = panel.querySelector(".model-compare-models");
-    const defaults = new Set(["Qwen-Image-2512", "z-image-turbo"]);
+    const outputCard = $("output")?.closest(".card"); if (!outputCard) return;
+    const panel = document.createElement("section"); panel.id = "modelComparePanel"; panel.className = "model-compare-panel";
+    panel.innerHTML = `<div class="model-compare-head"><div><div class="model-compare-title">文生图模型对比</div><div class="model-compare-sub">使用同一个 Prompt 顺序调用 2–3 个模型，结果直接进入右侧 Output 与生成历史。每个模型都会提交真实 API 请求。</div></div></div><div class="model-compare-models"></div><div class="model-compare-footer"><div class="model-compare-status">建议优先比较已验证或推荐模型。</div><button type="button" class="btn primary model-compare-run">开始对比</button></div>`;
+    const anchor = $("workspacePreviewSummary") || outputCard.firstChild; if (anchor?.nextSibling) outputCard.insertBefore(panel, anchor.nextSibling); else outputCard.appendChild(panel);
+    const modelsBox = panel.querySelector(".model-compare-models"), defaults = new Set(["Qwen-Image-2512", "z-image-turbo"]);
     for (const model of compareModels()) {
-      const label = document.createElement("label");
-      label.className = "model-compare-chip";
-      label.title = model.badge || model.status?.detail || model.id;
-      const input = document.createElement("input");
-      input.type = "checkbox";
-      input.name = "compareModel";
-      input.value = model.id;
-      input.checked = defaults.has(model.id);
-      input.addEventListener("change", () => enforceCompareLimit(panel, input));
-      label.append(input, document.createTextNode(model.label || model.id));
-      modelsBox.appendChild(label);
+      const label = document.createElement("label"); label.className = "model-compare-chip"; label.title = model.badge || model.status?.detail || model.id;
+      const input = document.createElement("input"); input.type = "checkbox"; input.name = "compareModel"; input.value = model.id; input.checked = defaults.has(model.id); input.addEventListener("change", () => enforceCompareLimit(panel, input));
+      label.append(input, document.createTextNode(model.label || model.id)); modelsBox.appendChild(label);
     }
-    panel.querySelector(".model-compare-run")?.addEventListener("click", () => runComparison(panel));
-    syncCompareVisibility();
+    panel.querySelector(".model-compare-run")?.addEventListener("click", () => runComparison(panel)); syncCompareVisibility();
   }
-
-  function syncCompareVisibility() {
-    const panel = $("modelComparePanel");
-    if (panel) panel.hidden = activeTask() !== "t2i";
-  }
+  function syncCompareVisibility() { const panel = $("modelComparePanel"); if (panel) panel.hidden = activeTask() !== "t2i"; }
 
   function setupApiKeyPrivacy() {
-    const input = $("apiKey");
-    if (!input) return;
-    input.type = "password";
-    input.autocomplete = "off";
-    input.spellcheck = false;
+    const input = $("apiKey"); if (!input) return;
+    input.type = "password"; input.autocomplete = "off"; input.spellcheck = false;
     if ($("btnToggleApiKey")) return;
-    const button = document.createElement("button");
-    button.id = "btnToggleApiKey";
-    button.type = "button";
-    button.className = "btn";
-    button.textContent = "显示 Key";
-    button.addEventListener("click", () => {
-      const visible = input.type === "text";
-      input.type = visible ? "password" : "text";
-      button.textContent = visible ? "显示 Key" : "隐藏 Key";
-    });
+    const button = document.createElement("button"); button.id = "btnToggleApiKey"; button.type = "button"; button.className = "btn"; button.textContent = "显示 Key";
+    button.addEventListener("click", () => { const visible = input.type === "text"; input.type = visible ? "password" : "text"; button.textContent = visible ? "显示 Key" : "隐藏 Key"; });
     input.insertAdjacentElement("afterend", button);
   }
 
   function setupOutputCleanup() {
-    const button = $("btnClearOutput");
-    const output = $("output");
-    if (!button || !output || button.dataset.blobCleanupBound === "1") return;
+    const button = $("btnClearOutput"), output = $("output"); if (!button || !output || button.dataset.blobCleanupBound === "1") return;
     button.dataset.blobCleanupBound = "1";
     button.addEventListener("click", () => {
       const urls = new Set();
-      for (const node of output.querySelectorAll("img,video,source,a")) {
-        const value = node.currentSrc || node.src || node.href || "";
-        if (String(value).startsWith("blob:")) urls.add(String(value));
-      }
-      for (const url of urls) {
-        try { URL.revokeObjectURL(url); } catch {}
-      }
+      for (const node of output.querySelectorAll("img,video,source,a")) { const value = node.currentSrc || node.src || node.href || ""; if (String(value).startsWith("blob:")) urls.add(String(value)); }
+      for (const url of urls) { try { URL.revokeObjectURL(url); } catch {} }
     }, true);
   }
 
   function init() {
-    setupApiKeyPrivacy();
-    setupOutputCleanup();
+    setupApiKeyPrivacy(); setupOutputCleanup();
     for (const task of Object.keys(TASKS)) createPromptTools(task);
-    createComparePanel();
-    $("modelSel")?.addEventListener("change", syncCompareVisibility);
+    createComparePanel(); $("modelSel")?.addEventListener("change", syncCompareVisibility);
   }
 
   window.addEventListener("DOMContentLoaded", () => requestAnimationFrame(() => requestAnimationFrame(init)));
