@@ -206,6 +206,71 @@ Inspector 形成三层结构：
 
 静态审计同步增加：比例按钮、数量 Stepper、基础/高级参数分层、开发者设置存在性检查。
 
+## 第三轮产品化精修：F–J ✅
+
+日期：2026-08-09
+
+### F — Canvas Focus View ✅
+
+Output 根据真实媒体结果数量自动改变布局：
+
+- 1 个图片 / 视频：进入 Focus View，作品居中并获得更大的展示面积。
+- 2 个结果：固定双列对比。
+- 3 个及以上：恢复自适应 Gallery。
+- 纯任务信息 / JSON 信息不参与媒体数量计算，并作为弱化的系统信息显示。
+
+### G — Gallery / Lightbox 操作 ✅
+
+- 图片结果保留“编辑 / 生成视频”，并新增直接“下载”。
+- 原来的下载 / 打开 file_url / JSON 操作不会删除，而是收进作品卡的“更多”。
+- Lightbox 会同步显示当前作品可用的编辑、生成视频和下载操作。
+- 移动端仍保持作品操作可直接触达。
+
+### H — 模型选择器 ✅
+
+原生 `<select>` 继续作为唯一状态源，但视觉上替换为产品化模型选择器：
+
+- 当前模型显示名称与一句简短定位。
+- 模型菜单按 Registry 分组。
+- 模型数量较多时自动提供搜索。
+- 使用绿 / 蓝 / 黄状态点表示已验证、已适配、实验模型。
+- 自定义模型入口继续保留。
+- 选择结果仍写回原始 Select 并触发原来的 change 事件，所以不会复制模型逻辑。
+
+### I — 图标系统 ✅
+
+工作流、History、Task、Settings 统一替换为同一套线性 SVG：
+
+- 18px 基础尺寸
+- 统一 stroke width
+- 选中状态继续使用 Indigo Accent
+
+不再混用 `✦ / ◐ / ▶ / ◆` 等 Unicode 图标。
+
+### J — Settings Drawer ✅
+
+Settings 重新整理为：
+
+```text
+外观
+  跟随系统 / 浅色 / 深色
+
+API 连接
+  API Key
+  记住 Key
+  显示 / 清除
+
+其他
+  API 管理 / GitHub / 赞助
+
+开发者设置
+  原兼容选择器 / 同步与诊断入口
+```
+
+新增 `moark_theme_mode` 保存 `system / light / dark` 三态；系统模式下会跟随系统主题变化。原 `moark_theme` 仍兼容旧逻辑。
+
+静态审计同步增加 Focus Gallery、模型选择器、Settings 三态主题、SVG 产品层、Lightbox Actions 及下载入口检查。
+
 ## 当前文件职责
 
 ```text
@@ -221,7 +286,11 @@ js/ui/creation-tools.js
 
 studio-extras.css
 js/ui/studio-extras.js
-  最终视觉收敛、比例/清晰度按钮、数量 Stepper、Prompt 自动高度、结果直送、任务角标、快捷键和设置入口
+  比例/清晰度按钮、数量 Stepper、Prompt 自动高度、结果直送、任务角标、快捷键和基础视觉收敛
+
+product-polish.css
+js/ui/product-polish.js
+  F–J 产品化层：Focus Gallery、Lightbox Actions、模型选择器、统一 SVG、Settings 三态外观与最终交互细节
 ```
 
 这一轮不会重新引入 `xxx-hotfix.js`。界面层继续按照单一职责拆分，底层生成仍只有现有 Registry / Adapter / Runtime 一套逻辑。
