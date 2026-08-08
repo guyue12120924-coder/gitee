@@ -89,6 +89,7 @@ if (!historyStore.includes("removeFallback")) failures.push("History store must 
 const modelRuntime = fs.readFileSync(path.join(root, "js/runtime/model-runtime.js"), "utf8");
 if (!modelRuntime.includes("body?.image || body?.first_frame || body?.image_url")) failures.push("Model runtime must infer I2V/T2V from request payload");
 if (!modelRuntime.includes("el.replaceChildren(strong, span)")) failures.push("Model health details must be rendered without provider-controlled innerHTML");
+if (!modelRuntime.includes("shouldRecordDetectedHealth")) failures.push("Model health must filter user/auth/network failures");
 
 const multiModel = fs.readFileSync(path.join(root, "multi-model.js"), "utf8");
 if (!multiModel.includes("acceptedWithoutRecognizedResult")) failures.push("Ambiguous accepted responses must stop compatibility retries");
@@ -101,15 +102,25 @@ if (!creationCss.includes("workspace-preview-summary + .model-compare-panel + .r
 const creationTools = fs.readFileSync(path.join(root, "js/ui/creation-tools.js"), "utf8");
 if (!creationTools.includes("一次最多对比 3 个模型")) failures.push("Model comparison API-call limit is missing");
 if (!creationTools.includes("真实提交")) failures.push("Model comparison cost/real-request confirmation is missing");
+if (!creationTools.includes('input.type = "password"')) failures.push("API key input must be masked by the final UI layer");
+if (!creationTools.includes("URL.revokeObjectURL")) failures.push("Output clear must release local blob URLs");
 
 const downloadProxy = fs.readFileSync(path.join(root, "functions/dl.js"), "utf8");
 if (!downloadProxy.includes('url.protocol !== "https:"')) failures.push("Download proxy must require HTTPS targets");
 if (!downloadProxy.includes('redirect: "manual"')) failures.push("Download proxy must validate redirects manually");
 if (!downloadProxy.includes("isPrivateIpv4")) failures.push("Download proxy private-network guard is missing");
+if (!downloadProxy.includes('host.includes(":")')) failures.push("Download proxy literal IPv6 guard is missing");
 
 const apiProxy = fs.readFileSync(path.join(root, "functions/api/[[path]].js"), "utf8");
 if (apiProxy.includes("new Headers(request.headers)")) failures.push("API proxy must not forward all browser headers upstream");
 if (!apiProxy.includes('["Authorization", "Content-Type", "Accept", "Range"]')) failures.push("API proxy header allowlist is missing");
+if (!apiProxy.includes("isSafeSegment")) failures.push("API proxy must validate path segments before building the upstream URL");
+if (!apiProxy.includes("encodeURIComponent(segment)")) failures.push("API proxy must encode upstream path segments");
+
+const middleware = fs.readFileSync(path.join(root, "functions/_middleware.js"), "utf8");
+for (const header of ["x-content-type-options", "x-frame-options", "referrer-policy", "permissions-policy"]) {
+  if (!middleware.includes(header)) failures.push(`Homepage security header missing: ${header}`);
+}
 
 console.log(`Static audit: ${notes.join("; ")}`);
 if (failures.length) {
