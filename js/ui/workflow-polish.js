@@ -35,6 +35,21 @@
     }
   }
 
+  function uploadFieldHost(input, preview) {
+    let field = input.parentElement;
+    if (!field) return null;
+    const legacyLabel = input.previousElementSibling?.classList?.contains("lab") ? input.previousElementSibling : null;
+    if (field.classList.contains("workspace-inspector-panel")) {
+      const host = document.createElement("div");
+      field.insertBefore(host, legacyLabel || input);
+      if (legacyLabel) host.appendChild(legacyLabel);
+      host.appendChild(input);
+      if (preview) host.appendChild(preview);
+      field = host;
+    }
+    return field;
+  }
+
   function decorateUpload(config) {
     const input = $(config.inputId);
     const preview = $(config.previewId);
@@ -42,10 +57,10 @@
     input.dataset.studioUpload = "1";
     input.classList.add("studio-upload-native");
 
-    const field = input.parentElement;
+    const field = uploadFieldHost(input, preview);
     if (!field) return;
     field.classList.add("studio-upload-field");
-    const legacyLabel = input.previousElementSibling?.classList?.contains("lab") ? input.previousElementSibling : null;
+    const legacyLabel = input.previousElementSibling?.classList?.contains("lab") ? input.previousElementSibling : field.querySelector(":scope > .lab");
     legacyLabel?.classList.add("studio-upload-legacy-label");
 
     const card = document.createElement("div");
