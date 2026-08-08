@@ -1,6 +1,10 @@
 (() => {
   "use strict";
 
+  // Built-in model names below are restricted to models currently visible in
+  // Gitee AI's Serverless catalog. Some newer video providers use model-specific
+  // payloads; those entries are marked as compatibility/experimental and the UI
+  // retries several Gitee video request shapes before reporting an error.
   const TASKS = {
     t2i: {
       panelId: "panelZ",
@@ -9,19 +13,23 @@
       defaultEndpoint: "images/generations",
       models: [
         { id: "Qwen-Image-2512", label: "Qwen-Image-2512", badge: "推荐 · 高质量" },
-        { id: "FLUX.2-dev", label: "FLUX.2-dev", badge: "推荐 · 专业质量" },
-        { id: "Qwen-Image", label: "Qwen-Image", badge: "高质量" },
-        { id: "FLUX.1-schnell", label: "FLUX.1-schnell", badge: "热门 · 极速" },
-        { id: "z-image-turbo", label: "z-image-turbo", badge: "极速" },
-        { id: "Z-Image", label: "Z-Image", badge: "高质量" },
-        { id: "GLM-Image", label: "GLM-Image", badge: "高质量" },
-        { id: "HiDream-I1-Full", label: "HiDream-I1-Full", badge: "高质量" },
-        { id: "CogView4-6B", label: "CogView4-6B", badge: "通用" },
-        { id: "LongCat-Image", label: "LongCat-Image", badge: "通用" },
-        { id: "FLUX.1-dev", label: "FLUX.1-dev", badge: "经典高质量" },
-        { id: "FLUX.1-Krea-dev", label: "FLUX.1-Krea-dev", badge: "创意" },
+        { id: "FLUX.2-dev", label: "FLUX.2-dev", badge: "高质量 · 专业" },
+        { id: "Qwen-Image", label: "Qwen-Image", badge: "高质量 · 中文文字" },
         { id: "FLUX.2-klein-9B", label: "FLUX.2-klein-9B", badge: "推荐 · 均衡" },
-        { id: "FLUX.2-klein-4B", label: "FLUX.2-klein-4B", badge: "轻量" },
+        { id: "FLUX.1-schnell", label: "FLUX.1-schnell", badge: "热门 · 极速" },
+        { id: "z-image-turbo", label: "z-image-turbo", badge: "推荐 · 极速 · 2K" },
+        { id: "Z-Image", label: "Z-Image", badge: "高质量" },
+        { id: "GLM-Image", label: "GLM-Image", badge: "中文 · 文字渲染" },
+        { id: "HiDream-I1-Full", label: "HiDream-I1-Full", badge: "高质量" },
+        { id: "CogView4-6B", label: "CogView4-6B", badge: "中文 · 空间关系" },
+        { id: "LongCat-Image", label: "LongCat-Image", badge: "写实 · 中文文字" },
+        { id: "FLUX.1-dev", label: "FLUX.1-dev", badge: "经典高质量" },
+        { id: "FLUX.1-Krea-dev", label: "FLUX.1-Krea-dev", badge: "创意 · 美学" },
+        { id: "FLUX.2-klein-4B", label: "FLUX.2-klein-4B", badge: "快速/轻量" },
+        { id: "Kolors", label: "Kolors", badge: "中文 · 风格" },
+        { id: "stable-diffusion-xl-base-1.0", label: "SDXL 1.0", badge: "经典通用" },
+        { id: "stable-diffusion-3.5-large-turbo", label: "SD 3.5 Large Turbo", badge: "快速 · 高质量" },
+        { id: "stable-diffusion-3-medium", label: "Stable Diffusion 3 Medium", badge: "通用" },
       ],
     },
     edit: {
@@ -30,12 +38,14 @@
       storageKey: "moark_model_edit",
       defaultEndpoint: "async/images/edits",
       models: [
-        { id: "Qwen-Image-Edit-2511", label: "Qwen-Image-Edit-2511", badge: "推荐 · 默认 · 去物体/一致性" },
-        { id: "LongCat-Image-Edit", label: "LongCat-Image-Edit", badge: "推荐 · 精细编辑" },
-        { id: "Qwen-Image-Edit", label: "Qwen-Image-Edit", badge: "热门 · 通用编辑" },
-        { id: "FLUX.1-Kontext-dev", label: "FLUX.1-Kontext-dev", badge: "上下文编辑" },
-        { id: "DreamO", label: "DreamO", badge: "主体/风格定制" },
-        { id: "Qwen-Image-Layered", label: "Qwen-Image-Layered", badge: "分层编辑" },
+        { id: "Qwen-Image-Edit-2511", label: "Qwen-Image-Edit-2511", badge: "推荐 · 默认 · 去物体/一致性", profile: "qwen" },
+        { id: "LongCat-Image-Edit", label: "LongCat-Image-Edit", badge: "推荐 · 精细编辑", profile: "standard" },
+        { id: "Qwen-Image-Edit", label: "Qwen-Image-Edit", badge: "热门 · 通用编辑", profile: "qwen" },
+        { id: "FLUX.1-Kontext-dev", label: "FLUX.1-Kontext-dev", badge: "上下文编辑 · 一致性", profile: "standard" },
+        { id: "FLUX.2-klein-9B", label: "FLUX.2-klein-9B", badge: "推荐 · 快速编辑", profile: "standard" },
+        { id: "FLUX.2-klein-4B", label: "FLUX.2-klein-4B", badge: "轻量 · 快速编辑", profile: "standard" },
+        { id: "FLUX.1-Krea-dev", label: "FLUX.1-Krea-dev", badge: "创意编辑", profile: "standard" },
+        { id: "Qwen-Image", label: "Qwen-Image", badge: "生成+编辑", profile: "standard" },
       ],
     },
     i2v: {
@@ -44,15 +54,14 @@
       storageKey: "moark_model_i2v",
       defaultEndpoint: "async/videos/image-to-video",
       models: [
-        { id: "ViduQ3-Pro", label: "ViduQ3-Pro", badge: "推荐 · 电影级" },
-        { id: "Wan2.7", label: "Wan 2.7", badge: "推荐 · 强表演" },
-        { id: "ViduQ2-Pro", label: "ViduQ2-Pro", badge: "推荐 · 可控编辑" },
-        { id: "ViduQ3-Turbo", label: "ViduQ3-Turbo", badge: "高质量 · 高性价比" },
-        { id: "Wan2_2-I2V-A14B", label: "Wan2.2-I2V-A14B", badge: "稳定 · 原项目默认", profile: "wan" },
-        { id: "ViduQ2-Turbo", label: "ViduQ2-Turbo", badge: "极速" },
-        { id: "HappyHorse-1.1", label: "HappyHorse-1.1", badge: "Gitee 体验可见" },
-        { id: "HappyHorse-1.0", label: "HappyHorse-1.0", badge: "高还原 I2V" },
-        { id: "LTX-2", label: "LTX-2", badge: "音视频基础模型" },
+        { id: "ViduQ3-Pro", label: "ViduQ3-Pro", badge: "高质量 · 电影级 · 兼容尝试", profile: "generic" },
+        { id: "ViduQ2-Pro", label: "ViduQ2-Pro", badge: "参考可控 · 兼容尝试", profile: "generic" },
+        { id: "ViduQ3-Turbo", label: "ViduQ3-Turbo", badge: "高性价比 · 兼容尝试", profile: "generic" },
+        { id: "ViduQ2-Turbo", label: "ViduQ2-Turbo", badge: "极速 · 兼容尝试", profile: "generic" },
+        { id: "Wan2_2-I2V-A14B", label: "Wan2.2-I2V-A14B", badge: "稳定 · 原项目已验证", profile: "wan" },
+        { id: "HappyHorse-1.0", label: "HappyHorse-1.0", badge: "高还原 I2V · 兼容尝试", profile: "generic" },
+        { id: "LTX-2", label: "LTX-2", badge: "音视频基础模型 · 兼容尝试", profile: "generic" },
+        { id: "Wan2.7", label: "Wan 2.7", badge: "Gitee 当前视频模型 · 兼容尝试", profile: "generic" },
       ],
     },
     t2v: {
@@ -61,12 +70,12 @@
       storageKey: "moark_model_t2v",
       defaultEndpoint: "async/videos/generations",
       models: [
-        { id: "ViduQ3-Pro", label: "ViduQ3-Pro", badge: "推荐 · 电影级" },
-        { id: "Wan2.7", label: "Wan 2.7", badge: "推荐 · 强表演" },
-        { id: "ViduQ3-Turbo", label: "ViduQ3-Turbo", badge: "高质量 · 高性价比" },
-        { id: "LTX-2", label: "LTX-2", badge: "同步音视频" },
-        { id: "HunyuanVideo-1.5", label: "HunyuanVideo-1.5", badge: "Gitee 推荐 · 稳定", profile: "hunyuan" },
-        { id: "Wan2.1-T2V-14B", label: "Wan2.1-T2V-14B", badge: "热门 · 文生视频" },
+        { id: "HunyuanVideo-1.5", label: "HunyuanVideo-1.5", badge: "推荐 · 原项目已验证", profile: "hunyuan" },
+        { id: "Wan2.1-T2V-14B", label: "Wan2.1-T2V-14B", badge: "热门 · 文生视频", profile: "generic" },
+        { id: "ViduQ3-Pro", label: "ViduQ3-Pro", badge: "电影级 · 兼容尝试", profile: "generic" },
+        { id: "ViduQ3-Turbo", label: "ViduQ3-Turbo", badge: "高性价比 · 兼容尝试", profile: "generic" },
+        { id: "LTX-2", label: "LTX-2", badge: "同步音视频 · 兼容尝试", profile: "generic" },
+        { id: "Wan2.7", label: "Wan 2.7", badge: "Gitee 当前视频模型 · 兼容尝试", profile: "generic" },
       ],
     },
   };
@@ -74,10 +83,7 @@
   const $ = (id) => document.getElementById(id);
 
   function status(text, kind = "info") {
-    if (typeof window.setStatus === "function") {
-      window.setStatus(text, kind);
-      return;
-    }
+    if (typeof window.setStatus === "function") return window.setStatus(text, kind);
     const badge = $("statusBadge");
     if (badge) badge.textContent = text;
   }
@@ -154,6 +160,15 @@
     return { blob, url: URL.createObjectURL(blob) };
   }
 
+  async function fileToDataUrl(file) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(reader.error || new Error("读取图片失败"));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function pollTask(taskId, key, timeoutMs = 60 * 60 * 1000) {
     const start = Date.now();
     let n = 0;
@@ -167,9 +182,24 @@
       const j = await readJson(res);
       const st = j.status || j.state || "unknown";
       if (["success", "failed", "cancelled"].includes(st)) return { status: st, raw: j };
+      if (!res.ok && res.status >= 400 && res.status < 500) {
+        return { status: "failed", raw: j };
+      }
       await new Promise((r) => setTimeout(r, 7000));
     }
     return { status: "timeout", raw: { status: "timeout" } };
+  }
+
+  function imageUrlFromResponse(j) {
+    return j?.output?.file_url || j?.output?.url || j?.data?.[0]?.url || j?.images?.[0]?.url || null;
+  }
+
+  function imageB64FromResponse(j) {
+    return j?.data?.[0]?.b64_json || j?.images?.[0]?.b64_json || null;
+  }
+
+  function videoUrlFromResponse(j) {
+    return j?.output?.file_url || j?.output?.video_url || j?.output?.url || j?.data?.[0]?.url || j?.video?.url || null;
   }
 
   function currentModel(task) {
@@ -182,7 +212,7 @@
       const endpoint = $(`mm-${task}-endpoint`)?.value?.trim() || conf.defaultEndpoint;
       return { id, label: id, badge: "自定义", endpoint, profile: "custom" };
     }
-    const model = conf.models.find((m) => m.id === sel.value) || { id: sel.value, label: sel.value };
+    const model = conf.models.find((m) => m.id === sel.value) || { id: sel.value, label: sel.value, profile: "generic" };
     const endpoint = $(`mm-${task}-endpoint`)?.value?.trim() || model.endpoint || conf.defaultEndpoint;
     return { ...model, endpoint };
   }
@@ -215,7 +245,7 @@
         <div class="grid2">
           <div>
             <label class="lab">自定义模型 ID</label>
-            <input id="mm-${task}-custom-id" class="input" placeholder="例如：新上线的 Gitee 模型名称" />
+            <input id="mm-${task}-custom-id" class="input" placeholder="填写 Gitee 当前模型 ID" />
           </div>
           <div>
             <label class="lab">API Endpoint（可选）</label>
@@ -244,7 +274,13 @@
     const sel = $(conf.selectId);
     const groups = new Map();
     for (const m of conf.models) {
-      const groupName = m.badge?.includes("推荐") ? "推荐" : m.badge?.includes("极速") || m.badge?.includes("轻量") ? "快速/轻量" : "更多模型";
+      const groupName = m.badge?.includes("推荐") || m.badge?.includes("已验证")
+        ? "推荐/已验证"
+        : m.badge?.includes("快速") || m.badge?.includes("极速") || m.badge?.includes("轻量")
+          ? "快速/轻量"
+          : m.badge?.includes("兼容尝试")
+            ? "Gitee 新模型（兼容尝试）"
+            : "更多模型";
       if (!groups.has(groupName)) groups.set(groupName, []);
       groups.get(groupName).push(m);
     }
@@ -284,8 +320,8 @@
       $(`mm-${task}-custom`).style.display = isCustom ? "block" : "none";
       const m = conf.models.find((x) => x.id === sel.value);
       $(`mm-${task}-note`).textContent = isCustom
-        ? "自定义模式：模型 ID 与接口需与 Gitee 当前 API 文档一致。"
-        : `${m?.badge || "Gitee 模型"} · 实际请求 model=${m?.id || sel.value}`;
+        ? "自定义模式：请以 Gitee 当前模型页面展示的 model ID / Endpoint 为准。"
+        : `${m?.badge || "Gitee 模型"} · 请求 model=${m?.id || sel.value}`;
       if (!isCustom) {
         const ep = m?.endpoint || conf.defaultEndpoint;
         normalEndpoint.value = ep;
@@ -326,16 +362,18 @@
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const j = await readJson(res);
+    let j = await readJson(res);
     if (!res.ok) throw new Error(`${model.label} HTTP ${res.status}: ${j?._text || j?.message || JSON.stringify(j).slice(0,220)}`);
 
-    const items = Array.isArray(j.data) ? j.data : (j.output?.file_url ? [{ url: j.output.file_url }] : []);
-    if (!items.length && j.task_id) {
+    if (!imageUrlFromResponse(j) && !imageB64FromResponse(j) && j.task_id) {
       const result = await pollTask(j.task_id, key);
       if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`);
-      const url = result.raw?.output?.file_url;
-      if (url) items.push({ url });
+      j = result.raw;
     }
+
+    const items = Array.isArray(j.data) ? j.data : Array.isArray(j.images) ? j.images : [];
+    if (!items.length && imageUrlFromResponse(j)) items.push({ url: imageUrlFromResponse(j) });
+    if (!items.length && imageB64FromResponse(j)) items.push({ b64_json: imageB64FromResponse(j) });
     if (!items.length) throw new Error("API 返回成功，但没有发现图片数据");
 
     for (let i = 0; i < items.length; i++) {
@@ -357,10 +395,23 @@
     status(`${model.label} 生成成功`, "ok");
   }
 
-  async function tryEditRequest(endpoint, key, fd) {
-    const res = await apiFetch(endpoint, { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: fd });
-    const j = await readJson(res);
-    return { res, j };
+  function buildEditForm(model, f1, f2, prompt, extra) {
+    const fd = new FormData();
+    fd.append("prompt", prompt);
+    fd.append("model", model.id);
+    fd.append("image", f1, f1.name);
+    if (f2) fd.append("image", f2, f2.name);
+
+    if (model.profile === "qwen") {
+      const steps = Math.max(1, Math.min(50, Number.parseInt($("editSteps")?.value || "4", 10) || 4));
+      const guidance = Number.parseFloat($("editGuidance")?.value || "1") || 1;
+      const types = [...document.querySelectorAll("input[name='editTaskType']:checked")].map((x) => x.value);
+      fd.append("num_inference_steps", String(steps));
+      fd.append("guidance_scale", String(guidance));
+      for (const t of types) fd.append("task_types", t);
+    }
+    appendExtraForm(fd, extra);
+    return fd;
   }
 
   async function runEdit() {
@@ -369,49 +420,48 @@
     const f1 = $("editImg1")?.files?.[0];
     const f2 = $("editImg2")?.files?.[0];
     const prompt = $("editPrompt")?.value?.trim();
-    if (!f1 || !prompt) throw new Error("至少上传图1并输入提示词；图2现在是可选参考图");
-    const steps = Math.max(1, Math.min(50, Number.parseInt($("editSteps")?.value || "4", 10) || 4));
-    const guidance = Number.parseFloat($("editGuidance")?.value || "1") || 1;
-    const types = [...document.querySelectorAll("input[name='editTaskType']:checked")].map((x) => x.value);
+    if (!f1 || !prompt) throw new Error("至少上传图1并输入提示词；图2为可选参考图");
+    const extra = parseExtra("edit");
 
-    const makeFd = () => {
-      const fd = new FormData();
-      fd.append("prompt", prompt);
-      fd.append("model", model.id);
-      fd.append("num_inference_steps", String(steps));
-      fd.append("guidance_scale", String(guidance));
-      for (const t of types) fd.append("task_types", t);
-      fd.append("image", f1, f1.name);
-      if (f2) fd.append("image", f2, f2.name);
-      appendExtraForm(fd, parseExtra("edit"));
-      return fd;
-    };
-
+    const endpoints = [...new Set([model.endpoint, "async/images/edits", "images/edits"].filter(Boolean))];
+    let last = null;
     status(`${model.label} 创建编辑任务…`);
-    let { res, j } = await tryEditRequest(model.endpoint, key, makeFd());
-    if (!res.ok && model.endpoint !== "images/edits") {
-      ({ res, j } = await tryEditRequest("images/edits", key, makeFd()));
+    for (const endpoint of endpoints) {
+      const res = await apiFetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}` },
+        body: buildEditForm(model, f1, f2, prompt, extra),
+      });
+      const j = await readJson(res);
+      last = { res, j, endpoint };
+      if (res.ok && (j.task_id || imageUrlFromResponse(j) || imageB64FromResponse(j))) break;
     }
-    if (!res.ok) throw new Error(`${model.label} HTTP ${res.status}: ${j?._text || j?.message || JSON.stringify(j).slice(0,220)}`);
+    if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
 
-    let fileUrl = j?.output?.file_url || j?.data?.[0]?.url;
-    let raw = j;
-    if (!fileUrl && j.task_id) {
-      const result = await pollTask(j.task_id, key);
-      raw = result.raw;
+    let raw = last.j;
+    if (!imageUrlFromResponse(raw) && !imageB64FromResponse(raw) && raw.task_id) {
+      const result = await pollTask(raw.task_id, key);
       if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`);
-      fileUrl = raw?.output?.file_url || raw?.data?.[0]?.url;
+      raw = result.raw;
     }
-    if (!fileUrl) throw new Error("编辑成功响应中没有 file_url/url");
-    const dl = await fetchBlob(fileUrl);
+
+    let objectUrl;
+    const fileUrl = imageUrlFromResponse(raw);
+    const b64 = imageB64FromResponse(raw);
+    if (fileUrl) objectUrl = (await fetchBlob(fileUrl)).url;
+    else if (b64) {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+    } else throw new Error("编辑成功响应中没有图片 URL / b64 数据");
+
     const img = document.createElement("img");
-    img.src = dl.url;
+    img.src = objectUrl;
     addOutput({
       title: `${model.label} · 图像编辑输出`,
-      meta: `实际模型=${model.id}${j.task_id ? ` · task_id=${j.task_id}` : ""}`,
+      meta: `实际模型=${model.id} · endpoint=${last.endpoint}${last.j.task_id ? ` · task_id=${last.j.task_id}` : ""}`,
       raw,
       element: img,
-      download: { href: dl.url, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.png` },
+      download: { href: objectUrl, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.png` },
       openUrl: $("editOpenUrl")?.checked ? fileUrl : null,
     });
     status(`${model.label} 编辑成功`, "ok");
@@ -457,6 +507,22 @@
     return fd;
   }
 
+  async function buildI2VJson(model, image, prompt, extra, imageField) {
+    const p = i2vBase();
+    const dataUrl = await fileToDataUrl(image);
+    const seed = Number.parseInt($("wanSeed")?.value || "-1", 10);
+    return {
+      model: model.id,
+      prompt,
+      [imageField]: dataUrl,
+      resolution: p.resolution,
+      duration: p.duration,
+      ratio: p.ratio,
+      ...(Number.isFinite(seed) && seed >= 0 ? { seed } : {}),
+      ...extra,
+    };
+  }
+
   async function runI2V() {
     const key = apiKey();
     const model = currentModel("i2v");
@@ -465,41 +531,58 @@
     if (!image || !prompt) throw new Error("请选择图片并输入提示词");
     const extra = parseExtra("i2v");
     const firstMode = model.profile === "wan" ? "wan" : "generic";
-    const attempts = [
+    const formAttempts = [
       { endpoint: model.endpoint, mode: firstMode },
       { endpoint: model.endpoint, mode: firstMode === "wan" ? "generic" : "wan" },
-      { endpoint: "async/videos/generations", mode: "generic" },
+      { endpoint: "async/videos/image-to-video", mode: "generic" },
       { endpoint: "async/videos/image-to-video", mode: "wan" },
+      { endpoint: "async/videos/generations", mode: "generic" },
     ];
 
-    let chosen = null;
     let last = null;
+    const seen = new Set();
     status(`${model.label} 创建图生视频任务…`);
-    for (const a of attempts) {
-      const signature = `${a.endpoint}:${a.mode}`;
-      if (chosen?.seen?.has(signature)) continue;
-      if (!chosen) chosen = { seen: new Set() };
-      chosen.seen.add(signature);
+    for (const a of formAttempts) {
+      const sig = `${a.endpoint}:${a.mode}`;
+      if (seen.has(sig)) continue;
+      seen.add(sig);
       const res = await apiFetch(a.endpoint, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}` },
         body: buildI2VForm(model, image, prompt, extra, a.mode),
       });
       const j = await readJson(res);
-      last = { res, j, ...a };
-      if (res.ok && (j.task_id || j.output?.file_url || j.data?.[0]?.url)) break;
+      last = { res, j, endpoint: a.endpoint, strategy: `multipart/${a.mode}` };
+      if (res.ok && (j.task_id || videoUrlFromResponse(j))) break;
     }
+
+    // Some Gitee video providers expose JSON-style image inputs. Only try these
+    // after multipart requests fail, to avoid duplicate successful jobs.
+    if (!(last?.res?.ok && (last.j.task_id || videoUrlFromResponse(last.j)))) {
+      for (const imageField of ["image", "first_frame"]) {
+        const endpoint = model.endpoint || "async/videos/image-to-video";
+        const body = await buildI2VJson(model, image, prompt, extra, imageField);
+        const res = await apiFetch(endpoint, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const j = await readJson(res);
+        last = { res, j, endpoint, strategy: `json/${imageField}` };
+        if (res.ok && (j.task_id || videoUrlFromResponse(j))) break;
+      }
+    }
+
     if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
 
-    let fileUrl = last.j?.output?.file_url || last.j?.data?.[0]?.url;
     let raw = last.j;
-    if (!fileUrl && last.j.task_id) {
-      const result = await pollTask(last.j.task_id, key);
-      raw = result.raw;
+    if (!videoUrlFromResponse(raw) && raw.task_id) {
+      const result = await pollTask(raw.task_id, key);
       if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`);
-      fileUrl = raw?.output?.file_url || raw?.data?.[0]?.url;
+      raw = result.raw;
     }
-    if (!fileUrl) throw new Error("任务成功但没有视频 file_url");
+    const fileUrl = videoUrlFromResponse(raw);
+    if (!fileUrl) throw new Error("任务成功但没有视频 file_url/video_url");
     const dl = await fetchBlob(fileUrl);
     const video = document.createElement("video");
     video.src = dl.url;
@@ -507,7 +590,7 @@
     video.playsInline = true;
     addOutput({
       title: `${model.label} · 图生视频输出`,
-      meta: `实际模型=${model.id} · endpoint=${last.endpoint} · 请求策略=${last.mode}`,
+      meta: `实际模型=${model.id} · endpoint=${last.endpoint} · 请求策略=${last.strategy}`,
       raw,
       element: video,
       download: { href: dl.url, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.mp4` },
@@ -557,30 +640,33 @@
       fps: Math.max(1, Number.parseInt($("hyFps")?.value || "24", 10) || 24),
       ...extra,
     };
+
+    const endpoints = [...new Set([model.endpoint, "async/videos/generations", "async/videos/text-to-video"].filter(Boolean))];
     const bodies = model.profile === "hunyuan" ? [legacy, generic] : [generic, legacy];
-    let last;
+    let last = null;
     status(`${model.label} 创建文生视频任务…`);
-    for (const body of bodies) {
-      const res = await apiFetch(model.endpoint, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const j = await readJson(res);
-      last = { res, j, body };
-      if (res.ok && (j.task_id || j.output?.file_url || j.data?.[0]?.url)) break;
+    outer: for (const endpoint of endpoints) {
+      for (const body of bodies) {
+        const res = await apiFetch(endpoint, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const j = await readJson(res);
+        last = { res, j, body, endpoint };
+        if (res.ok && (j.task_id || videoUrlFromResponse(j))) break outer;
+      }
     }
     if (!last?.res?.ok) throw new Error(`${model.label} HTTP ${last?.res?.status || "?"}: ${last?.j?._text || last?.j?.message || JSON.stringify(last?.j || {}).slice(0,220)}`);
 
-    let fileUrl = last.j?.output?.file_url || last.j?.data?.[0]?.url;
     let raw = last.j;
-    if (!fileUrl && last.j.task_id) {
-      const result = await pollTask(last.j.task_id, key);
-      raw = result.raw;
+    if (!videoUrlFromResponse(raw) && raw.task_id) {
+      const result = await pollTask(raw.task_id, key);
       if (result.status !== "success") throw new Error(`${model.label} 任务 ${result.status}`);
-      fileUrl = raw?.output?.file_url || raw?.data?.[0]?.url;
+      raw = result.raw;
     }
-    if (!fileUrl) throw new Error("任务成功但没有视频 file_url");
+    const fileUrl = videoUrlFromResponse(raw);
+    if (!fileUrl) throw new Error("任务成功但没有视频 file_url/video_url");
     const dl = await fetchBlob(fileUrl);
     const video = document.createElement("video");
     video.src = dl.url;
@@ -588,7 +674,7 @@
     video.playsInline = true;
     addOutput({
       title: `${model.label} · 文生视频输出`,
-      meta: `实际模型=${model.id} · endpoint=${model.endpoint}`,
+      meta: `实际模型=${model.id} · endpoint=${last.endpoint}`,
       raw,
       element: video,
       download: { href: dl.url, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}.mp4` },
@@ -600,17 +686,19 @@
   function classifyModelId(id) {
     const s = String(id || "");
     const out = [];
-    if (/image[-_ ]?edit|edit[-_ ]?image|kontext|layered|dreamo|longcat.*edit/i.test(s)) out.push("edit");
-    if (/i2v|image[-_ ]?to[-_ ]?video|happyhorse|viduq2|viduq3/i.test(s)) out.push("i2v");
-    if (/t2v|hunyuanvideo|viduq3|wan.*2[._ ]?7|ltx[-_ ]?2/i.test(s)) out.push("t2v");
-    if (/image|flux|cogview|hidream|z[-_ ]?image|longcat/i.test(s) && !out.includes("edit") && !/video|i2v|t2v/i.test(s)) out.push("t2i");
-    return out;
+    if (/image[-_ ]?edit|edit[-_ ]?image|kontext|longcat.*edit/i.test(s)) out.push("edit");
+    if (/i2v|image[-_ ]?to[-_ ]?video|happyhorse|viduq2/i.test(s)) out.push("i2v");
+    if (/viduq3/i.test(s)) out.push("i2v", "t2v");
+    if (/t2v|hunyuanvideo|wan.*2[._ ]?7/i.test(s)) out.push("t2v");
+    if (/ltx[-_ ]?2/i.test(s)) out.push("i2v", "t2v");
+    if (/image|flux|cogview|hidream|z[-_ ]?image|longcat|kolors|stable[-_ ]?diffusion/i.test(s) && !out.includes("edit") && !/video|i2v|t2v/i.test(s)) out.push("t2i");
+    return [...new Set(out)];
   }
 
   function mergeSyncedModel(task, id) {
     const conf = TASKS[task];
     if (conf.models.some((m) => m.id === id)) return;
-    conf.models.push({ id, label: id, badge: "Gitee API 同步" });
+    conf.models.push({ id, label: id, badge: "Gitee API 同步", profile: "generic" });
     const sel = $(conf.selectId);
     if (!sel || [...sel.options].some((o) => o.value === id)) return;
     let og = [...sel.querySelectorAll("optgroup")].find((x) => x.label === "Gitee API 同步");
@@ -629,7 +717,7 @@
     const key = apiKey();
     const note = $("mmSyncStatus");
     if (note) note.textContent = "正在尝试 GET /v1/models…";
-    status("正在从 Gitee API 尝试同步模型列表…");
+    status("正在尝试从 Gitee API 同步模型列表…");
     try {
       const res = await apiFetch("models", { headers: { Authorization: `Bearer ${key}` }, cache: "no-store" });
       const j = await readJson(res);
@@ -639,14 +727,16 @@
       if (!ids.length) throw new Error("接口可访问，但没有识别到模型数组");
       let merged = 0;
       for (const id of ids) {
-        const tasks = classifyModelId(id);
-        for (const task of tasks) { mergeSyncedModel(task, id); merged += 1; }
+        for (const task of classifyModelId(id)) {
+          mergeSyncedModel(task, id);
+          merged += 1;
+        }
       }
-      if (note) note.textContent = `同步成功：读取 ${ids.length} 个模型条目，按任务匹配 ${merged} 次。内置精选模型仍保留。`;
+      if (note) note.textContent = `同步成功：读取 ${ids.length} 个模型条目，任务匹配 ${merged} 次。内置精选模型仍保留。`;
       status("Gitee 模型列表同步成功", "ok");
     } catch (e) {
-      if (note) note.textContent = `自动同步不可用：${String(e.message || e)}。已继续使用内置精选模型；也可直接用“自定义模型”。`;
-      status("自动同步不可用，已使用内置模型", "info");
+      if (note) note.textContent = `Gitee 当前未确认公开 /v1/models，或此 Token 无权限：${String(e.message || e)}。内置模型与自定义模型不受影响。`;
+      status("模型自动同步不可用，继续使用内置模型", "info");
     }
   }
 
@@ -658,12 +748,12 @@
     b.id = "btnSyncModels";
     b.type = "button";
     b.className = "btn";
-    b.textContent = "同步 Gitee 模型";
+    b.textContent = "尝试同步 Gitee 模型";
     row.appendChild(b);
     const note = document.createElement("div");
     note.id = "mmSyncStatus";
     note.className = "hint";
-    note.textContent = "模型列表优先使用内置精选清单；点击可尝试通过 /v1/models 自动同步，失败不影响使用。";
+    note.textContent = "内置清单来自 Gitee 当前 Serverless 模型广场；自动同步为实验功能，仅手动触发，失败不影响使用。";
     row.parentElement?.appendChild(note);
     b.addEventListener("click", () => syncModels().catch((e) => addOutput({ title: "模型同步失败", meta: String(e) })));
   }
@@ -721,9 +811,5 @@
     modelControl("t2v", "文生视频模型 / Text-to-Video Model");
     addT2VCommonUi();
     overrideButtons();
-
-    if ($("apiKey")?.value?.trim()) {
-      setTimeout(() => syncModels().catch(() => {}), 800);
-    }
   });
 })();
