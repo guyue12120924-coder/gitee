@@ -75,6 +75,13 @@
     downloadBlob(blob, `wan_segments_${stamp}.zip`);
   }
 
+  function syncWanAutoFrames() {
+    if (!$("wanAutoFrames")?.checked) return;
+    const fps = Math.max(1, Math.min(60, Number.parseInt($("wanFps")?.value || "24", 10) || 24));
+    const frames = Math.max(1, Math.min(300, fps * 5));
+    if ($("wanFrames")) $("wanFrames").value = String(frames);
+  }
+
   function markExperimentalModels() {
     const ids = ["Wan2.7", "LTX-2"];
     for (const selectId of ["mmI2VModel", "mmT2VModel"]) {
@@ -133,6 +140,7 @@
 
     button.onclick = async function (event) {
       rememberKeyNow();
+      syncWanAutoFrames();
       setLoading(true);
       button.disabled = true;
 
@@ -152,6 +160,7 @@
         for (let i = 0; i < count; i++) {
           const remaining = Math.max(0.5, Math.min(5, requested - i * 5));
           if (durationInput) durationInput.value = String(remaining);
+          syncWanAutoFrames();
 
           const before = new Set(document.querySelectorAll("#output video"));
           if (typeof window.setStatus === "function") {
@@ -199,6 +208,7 @@
     // so its model controls/button handlers are ready by the time this runs.
     preferVerifiedDefaults();
     markExperimentalModels();
+    syncWanAutoFrames();
     wrapSimpleButton("btnZRun");
     wrapSimpleButton("btnEditRun");
     wrapWanButton();
