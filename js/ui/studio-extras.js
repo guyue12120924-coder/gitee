@@ -92,10 +92,12 @@
   function setupSettingsExtras() {
     const body = $("studioDrawerBody-settings");
     if (!body || $("studioSettingsExtras")) return;
+    const apiTitle = body.querySelector(".workspace-api-card h2");
+    if (apiTitle) apiTitle.textContent = "Gitee AI API";
     const box = document.createElement("section");
     box.id = "studioSettingsExtras";
     box.className = "studio-settings-extras";
-    box.innerHTML = `<div class="studio-settings-section-title">快捷入口</div><div class="studio-settings-links"><a class="btn" href="https://github.com/MallocPointer/gitee/" target="_blank" rel="noopener">GitHub</a><button type="button" class="btn" id="studioSponsorShortcut">赞助项目</button></div><div class="studio-settings-tip">API Key 仅保存在当前浏览器；生成请求仍通过本站 Cloudflare 代理转发到 Gitee AI。</div>`;
+    box.innerHTML = `<div class="studio-settings-section-title">快捷入口</div><div class="studio-settings-links"><a class="btn" href="https://ai.gitee.com/serverless-api" target="_blank" rel="noopener">API 管理</a><a class="btn" href="https://github.com/MallocPointer/gitee/" target="_blank" rel="noopener">GitHub</a><button type="button" class="btn" id="studioSponsorShortcut">赞助项目</button></div><div class="studio-settings-tip">API Key 仅保存在当前浏览器；生成请求仍通过本站 Cloudflare 代理转发到 Gitee AI。</div>`;
     body.insertBefore(box, body.firstChild);
     $("studioSponsorShortcut")?.addEventListener("click", () => $("donateBtn")?.click());
     document.querySelector('.topbar-right > a[href*="github.com"]')?.classList.add("studio-top-secondary");
