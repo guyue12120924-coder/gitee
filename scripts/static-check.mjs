@@ -25,6 +25,20 @@ for (const file of jsFiles) {
 }
 notes.push(`checked ${jsFiles.length} JavaScript files`);
 
+const versionPath = path.join(root, "VERSION");
+const readmePath = path.join(root, "README.md");
+const changelogPath = path.join(root, "CHANGELOG.md");
+if (!fs.existsSync(versionPath)) failures.push("Release VERSION file is missing");
+if (!fs.existsSync(changelogPath)) failures.push("CHANGELOG.md is missing");
+const version = fs.existsSync(versionPath) ? fs.readFileSync(versionPath, "utf8").trim() : "";
+if (version && !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) failures.push(`VERSION is not valid semver: ${version}`);
+const readme = fs.existsSync(readmePath) ? fs.readFileSync(readmePath, "utf8") : "";
+const changelog = fs.existsSync(changelogPath) ? fs.readFileSync(changelogPath, "utf8") : "";
+if (version && !readme.includes(`v${version}`)) failures.push(`README does not advertise v${version}`);
+if (version && !changelog.includes(`[${version}]`)) failures.push(`CHANGELOG does not contain ${version}`);
+if (readme.includes("第五阶段完成后") || readme.includes("第五阶段新增")) failures.push("README still contains stale phase-specific release wording");
+notes.push(`release ${version || "unknown"}`);
+
 const htmlPath = path.join(root, "index.html");
 const html = fs.readFileSync(htmlPath, "utf8");
 const localRefs = [...html.matchAll(/(?:src|href)=["']\.\/([^"'#?]+)["']/g)].map((match) => match[1]);
