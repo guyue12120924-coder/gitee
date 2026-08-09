@@ -21,7 +21,6 @@
     ["动漫插画", "高质量动漫插画，线条干净，色彩协调，角色设计完整，背景具有空间层次"],
     ["电影画面", "电影感画面，明确主体，层次丰富的光影，真实材质，细腻色彩，构图平衡"],
   ];
-
   let viewportFrame = 0;
   let suppressSearchFocusUntil = 0;
 
@@ -133,12 +132,8 @@
     scheduleViewportMetrics();
   }
 
-  function activeWorkflow() {
-    return document.getElementById("modelSel")?.value || "z-image";
-  }
-
   function activePrompt() {
-    const value = activeWorkflow();
+    const value = document.getElementById("modelSel")?.value || "z-image";
     const id = value === "Edit-2511" ? "editPrompt" : value === "Wan2.2-I2V-A14B" ? "wanPrompt" : value === "HunyuanVideo-1.5" ? "hyPrompt" : "zPrompt";
     return document.getElementById(id);
   }
@@ -152,38 +147,26 @@
     input.focus({ preventScroll: true });
   }
 
-  function currentModelText() {
-    const value = activeWorkflow();
+  function updateTopContext() {
+    const context = document.getElementById("studioTopContext");
+    if (!context) return;
+    const value = document.getElementById("modelSel")?.value || "z-image";
+    const label = WORKFLOW_LABELS[value] || "创作";
     const select = document.getElementById(WORKFLOW_MODELS[value]);
-    if (!select) return "模型加载中";
-    if (select.value === "__custom__") {
-      const task = value === "z-image" ? "t2i" : value === "Edit-2511" ? "edit" : value === "Wan2.2-I2V-A14B" ? "i2v" : "t2v";
-      return document.getElementById(`mm-${task}-custom-id`)?.value?.trim() || "自定义模型";
-    }
-    return select.value || select.selectedOptions?.[0]?.textContent?.trim() || "未选择模型";
+    const model = select?.value === "__custom__"
+      ? document.getElementById(`mm-${value === "z-image" ? "t2i" : value === "Edit-2511" ? "edit" : value === "Wan2.2-I2V-A14B" ? "i2v" : "t2v"}-custom-id`)?.value?.trim()
+      : select?.value;
+    context.innerHTML = `<strong>${label}</strong><span>${model || "模型加载中"}</span>`;
   }
 
   function ensureTopContext() {
     const main = document.querySelector(".studio-topbar .topbar-main");
-    if (!main) return null;
-    let context = document.getElementById("studioTopContext");
-    if (!context) {
-      context = document.createElement("div");
-      context.id = "studioTopContext";
-      context.className = "studio-top-context";
-      context.innerHTML = '<strong class="studio-top-context-mode"></strong><span class="studio-top-context-dot">·</span><span class="studio-top-context-model"></span>';
-      main.appendChild(context);
-    }
-    return context;
-  }
-
-  function updateTopContext() {
-    const context = ensureTopContext();
-    if (!context) return;
-    const mode = context.querySelector(".studio-top-context-mode");
-    const model = context.querySelector(".studio-top-context-model");
-    if (mode) mode.textContent = WORKFLOW_LABELS[activeWorkflow()] || "创作";
-    if (model) model.textContent = currentModelText();
+    if (!main || document.getElementById("studioTopContext")) return;
+    const context = document.createElement("div");
+    context.id = "studioTopContext";
+    context.className = "studio-top-context";
+    main.appendChild(context);
+    updateTopContext();
   }
 
   function ensureInspirationActions() {
@@ -203,74 +186,36 @@
     copy.appendChild(actions);
   }
 
-  function ensurePromptCounters() {
-    for (const id of COMPOSER_INPUTS) {
-      const input = document.getElementById(id);
-      if (!input) continue;
-      const slot = input.closest(".workspace-composer-slot");
-      const actions = slot?.querySelector(".workspace-composer-actions");
-      if (!slot || !actions) continue;
-      let count = actions.querySelector(".workspace-prompt-count");
-      if (!count) {
-        count = document.createElement("span");
-        count.className = "workspace-prompt-count";
-        actions.insertBefore(count, actions.firstChild);
-        input.addEventListener("input", () => { count.textContent = `${input.value.length} 字`; });
-      }
-      count.textContent = `${input.value.length} 字`;
-    }
-  }
-
-  function setText(selector, text) {
-    const node = document.querySelector(selector);
-    if (node && node.textContent !== text) node.textContent = text;
-  }
-
   function polishCreatorSurface() {
-    setText(".studio-topbar .brand-mark", "✦");
-    setText(".studio-topbar .h1", "Image View Studio");
-    setText("#workspaceWorkflowValue", "生成结果");
-
+    const preview = document.getElementById("workspaceWorkflowValue");
+    if (preview) preview.textContent = "生成结果";
     const empty = document.getElementById("workspacePreviewEmpty");
-    const emptyTitle = empty?.querySelector(":scope > div:last-child > strong");
-    const emptyText = empty?.querySelector(":scope > div:last-child > p");
-    if (emptyTitle && emptyTitle.textContent !== "开始创作") emptyTitle.textContent = "开始创作";
-    if (emptyText && emptyText.textContent !== "一句话描述你想生成的画面，或选择一个灵感方向开始") {
-      emptyText.textContent = "一句话描述你想生成的画面，或选择一个灵感方向开始";
-    }
+    const emptyTitle = empty?.querySelector("strong");
+    const emptyText = empty?.querySelector("p");
+    if (emptyTitle) emptyTitle.textContent = "开始你的创作之旅";
+    if (emptyText) emptyText.textContent = "描述你的想法，或从下面选择一个灵感开始";
 
-    for (const button of document.querySelectorAll(".pt-enhance")) {
-      if (button.textContent !== "AI 优化") button.textContent = "AI 优化";
-    }
-    for (const note of document.querySelectorAll(".prompt-toolbox-note")) {
-      note.textContent = "AI 优化会在浏览器中补充更完整的画面描述，不会产生额外 API 请求。";
-    }
+    for (const button of document.querySelectorAll(".pt-enhance")) button.textContent = "AI 优化";
+    for (const note of document.querySelectorAll(".prompt-toolbox-note")) note.textContent = "AI 优化会在浏览器中补充更完整的画面描述，不会产生额外 API 请求。";
     for (const details of document.querySelectorAll(".workspace-inspector .studio-model-developer-tools")) {
       const summary = details.querySelector(":scope > summary");
-      if (summary && summary.textContent !== "高级设置") summary.textContent = "高级设置";
+      if (summary) summary.textContent = "高级设置";
     }
 
     document.querySelector(".workspace-rail-utility")?.remove();
+    ensureTopContext();
     ensureInspirationActions();
-    ensurePromptCounters();
     updateTopContext();
   }
 
   function bindProductUiState() {
-    document.getElementById("modelSel")?.addEventListener("change", () => {
-      setTimeout(polishCreatorSurface, 0);
-    });
+    document.getElementById("modelSel")?.addEventListener("change", () => setTimeout(() => {
+      updateTopContext();
+      const preview = document.getElementById("workspaceWorkflowValue");
+      if (preview) preview.textContent = "生成结果";
+    }, 0));
     for (const id of Object.values(WORKFLOW_MODELS)) {
       document.getElementById(id)?.addEventListener("change", () => setTimeout(updateTopContext, 0));
-    }
-
-    const shell = document.getElementById("workspaceShell");
-    if (shell) {
-      const observer = new MutationObserver(() => {
-        ensurePromptCounters();
-        ensureInspirationActions();
-      });
-      observer.observe(shell, { childList: true, subtree: true });
     }
   }
 
@@ -280,8 +225,7 @@
     setupKeyboardBehavior();
     polishCreatorSurface();
     bindProductUiState();
-    setTimeout(polishCreatorSurface, 80);
-    setTimeout(polishCreatorSurface, 320);
+    setTimeout(polishCreatorSurface, 120);
   }
 
   window.addEventListener("DOMContentLoaded", () => requestAnimationFrame(init));
