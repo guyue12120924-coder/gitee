@@ -71,6 +71,19 @@ async function visibleBox(locator) {
   return box;
 }
 
+async function selectNativeModel(page, selectId, value, label) {
+  const selected = await page.evaluate(({ selectId, value }) => {
+    const select = document.getElementById(selectId);
+    if (!select || ![...select.options].some((option) => option.value === value)) return false;
+    select.value = value;
+    select.dispatchEvent(new Event("input", { bubbles: true }));
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    return select.value === value;
+  }, { selectId, value });
+  assert(selected, `${label}: required model ${value} is not available`);
+  await page.waitForTimeout(220);
+}
+
 for (const viewport of viewports) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
   const page = await context.newPage();
@@ -119,12 +132,12 @@ for (const viewport of viewports) {
   assert(await page.locator(".studio-edit-upload-stack .studio-upload-card").count() === 2, `${viewport.name}: edit upload cards missing`);
 
   await page.locator('.workspace-rail-button[data-function-value="Wan2.2-I2V-A14B"]').click();
-  await page.waitForTimeout(120);
+  await selectNativeModel(page, "mmI2VModel", "Wan2_2-I2V-A14B", viewport.name);
   assert(await page.locator(".studio-i2v-upload-stack .studio-upload-card").count() === 1, `${viewport.name}: I2V upload card missing`);
   assert(await page.locator("#studioWanFormat").count() === 1, `${viewport.name}: Wan friendly format controls missing`);
 
   await page.locator('.workspace-rail-button[data-function-value="HunyuanVideo-1.5"]').click();
-  await page.waitForTimeout(120);
+  await selectNativeModel(page, "mmT2VModel", "HunyuanVideo-1.5", viewport.name);
   assert(await page.locator("#studioHunyuanDuration").count() === 1, `${viewport.name}: Hunyuan duration control missing`);
 
   await page.locator('.workspace-rail-button[data-function-value="z-image"]').click();
