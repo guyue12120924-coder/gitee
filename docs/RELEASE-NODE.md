@@ -22,6 +22,10 @@ ede63f66f9d31ca06dde7bb4d90f390afc73da53
 
 All commits between the runtime/UI freeze and the RC branch point are documentation, version metadata, or static-audit changes; they do not change the model/API generation runtime.
 
+## Static audit verification
+
+The existing GitHub Actions `Static Check` workflow was executed through a temporary non-merge PR against the completed RC tree. Workflow run `#93` completed successfully and its `Run static audit` step concluded `success`. The verification PR was closed without merging.
+
 If an emergency rollback is needed before `v1.0.0`, use `release/v1.0.0-rc.1` for the complete release-candidate tree or the runtime/UI freeze commit above for the application-code freeze point.
 
-No Git tag is created by the available repository connector in this release-preparation pass. Promotion to `v1.0.0` requires the manual browser/device and credential-dependent regression items in `docs/V1-RC1-REGRESSION-REPORT.md` and `docs/V1-RELEASE-CHECKLIST.md` to pass.
+No Git tag is created by the available repository connector in this release-preparation pass. Promotion to `v1.0.0` still requires the manual browser/device and credential-dependent regression items in `docs/V1-RC1-REGRESSION-REPORT.md` and `docs/V1-RELEASE-CHECKLIST.md` to pass.
