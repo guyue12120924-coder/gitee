@@ -26,12 +26,20 @@
       ? Math.max(0, Math.round((window.innerHeight || height) - viewport.height - viewport.offsetTop))
       : 0;
     const keyboardOpen = MOBILE.matches && keyboardInset > 120;
+    const compactPhone = MOBILE.matches && window.innerWidth <= 430;
 
     document.documentElement.style.setProperty("--studio-mobile-vh", `${height}px`);
     document.documentElement.style.setProperty("--studio-viewport-offset-top", `${offsetTop}px`);
     document.documentElement.style.setProperty("--studio-keyboard-inset", `${keyboardInset}px`);
     document.body.classList.toggle("studio-mobile-layout", MOBILE.matches);
     document.body.classList.toggle("studio-keyboard-open", keyboardOpen);
+    document.body.classList.toggle("studio-compact-phone", compactPhone);
+
+    const themeButton = document.getElementById("themeToggleBtn");
+    if (themeButton) {
+      themeButton.hidden = compactPhone;
+      themeButton.setAttribute("aria-hidden", compactPhone ? "true" : "false");
+    }
   }
 
   function scheduleViewportMetrics() {
