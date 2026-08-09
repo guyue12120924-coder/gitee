@@ -16,6 +16,10 @@
   let listEl;
   let emptyEl;
   let countEl;
+  let searchTimer = null;
+  let renderQueued = false;
+  let historyDirty = true;
+  let hasRendered = false;
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[ch]);
@@ -211,10 +215,32 @@
     const state = $("historyStateFilter")?.value || "all";
     const query = $("historySearch")?.value || "";
     const records = await STORE.list({ limit: 50, task, state, query });
-    listEl.innerHTML = "";
+    const fragment = document.createDocumentFragment();
+    for (const record of records) fragment.appendChild(card(record));
+    listEl.replaceChildren(fragment);
     emptyEl.style.display = records.length ? "none" : "block";
     if (countEl) countEl.textContent = `${records.length} 条`;
-    for (const record of records) listEl.appendChild(card(record));
+    historyDirty = false;
+    hasRendered = true;
+  }
+
+  function historyDrawerOpen() {
+    const drawer = $("studioDrawer-history");
+    return Boolean(drawer?.classList.contains("is-open"));
+  }
+
+  function scheduleRender({ force = false, idle = false } = {}) {
+    historyDirty = true;
+    if (!force && $("studioDrawer-history") && !historyDrawerOpen()) return;
+    if (renderQueued) return;
+    renderQueued = true;
+    const run = async () => {
+      renderQueued = false;
+      if (!force && $("studioDrawer-history") && !historyDrawerOpen()) return;
+      await render();
+    };
+    if (idle && "requestIdleCallback" in window) requestIdleCallback(run, { timeout: 1200 });
+    else requestAnimationFrame(run);
   }
 
   async function exportJson() {
@@ -258,7 +284,7 @@
         <select id="historyStateFilter" class="input"><option value="all">全部状态</option><option value="success">成功</option><option value="failed">失败</option><option value="cancelled">已停止等待</option></select>
         <input id="historySearch" class="input" placeholder="搜索模型 / Prompt / task_id" />
       </div>
-      <div id="historyEmpty" class="hc-empty">还没有历史记录。完成一次生成后，这里会自动保存。</div>
+      <div id="historyEmpty" class="hc-empty">打开历史时会加载最近记录。</div>
       <div id="historyList" class="hc-list"></div>
     `;
 
@@ -268,15 +294,15 @@
     listEl = $("historyList");
     emptyEl = $("historyEmpty");
     countEl = $("historyCount");
-    $("historyTaskFilter")?.addEventListener("change", render);
-    $("historyStateFilter")?.addEventListener("change", render);
+    $("historyTaskFilter")?.addEventListener("change", () => scheduleRender({ force: true }));
+    $("historyStateFilter")?.addEventListener("change", () => scheduleRender({ force: true }));
     $("historySearch")?.addEventListener("input", () => {
-      clearTimeout(window.__giteeHistorySearchTimer);
-      window.__giteeHistorySearchTimer = setTimeout(render, 150);
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => scheduleRender({ force: true }), 150);
     });
     $("btnExportHistory")?.addEventListener("click", exportJson);
     $("btnClearHistory")?.addEventListener("click", clearAll);
-    render();
+    scheduleRender({ idle: true });
   }
 
   function injectStyle() {
@@ -309,7 +335,13 @@
     document.head.appendChild(style);
   }
 
-  STORE.subscribe(() => render());
+  STORE.subscribe(() => {
+    historyDirty = true;
+    if (historyDrawerOpen()) scheduleRender({ force: true });
+  });
+  window.addEventListener("gitee-studio-drawer-open", (event) => {
+    if (event.detail?.name === "history" && (historyDirty || !hasRendered)) scheduleRender({ force: true });
+  });
   window.addEventListener("DOMContentLoaded", () => {
     injectStyle();
     createCenter();
