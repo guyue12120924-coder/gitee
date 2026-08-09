@@ -38,11 +38,12 @@ const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== i
 if (duplicateIds.length) failures.push(`Duplicate static HTML ids: ${duplicateIds.join(", ")}`);
 notes.push(`checked ${ids.length} static HTML ids`);
 
-for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css", "workflow-polish.css"]) {
+for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css", "workflow-polish.css", "mobile-polish.css"]) {
   if (!html.includes(`href="./${stylesheet}"`)) failures.push(`Missing stylesheet in index.html: ${stylesheet}`);
 }
 if (!html.includes('id="apiKey" class="input" type="password"')) failures.push("API key must be masked in the static HTML before UI enhancement loads");
 if (!html.includes('loading="lazy" decoding="async" fetchpriority="low"')) failures.push("Hidden donation media should stay off the critical rendering path");
+if (!html.includes("viewport-fit=cover") || !html.includes("interactive-widget=resizes-content")) failures.push("Mobile viewport must support safe areas and keyboard-resized content");
 
 const requiredOrder = [
   "app.js",
@@ -62,6 +63,7 @@ const requiredOrder = [
   "js/ui/studio-extras.js",
   "js/ui/product-polish.js",
   "js/ui/workflow-polish.js",
+  "js/ui/mobile-polish.js",
 ];
 let previous = -1;
 for (const file of requiredOrder) {
@@ -138,6 +140,17 @@ if (!workflowUi.includes('item.dataset.studioWorkflow')) failures.push("Output i
 if (!workflowUi.includes('studio-gallery-one') || !workflowUi.includes('studio-gallery-two') || !workflowUi.includes('studio-gallery-many')) failures.push("Workflow-specific Canvas must own gallery layout classes");
 if (!workflowUi.includes('new MutationObserver') || !workflowUi.includes('observe(output, { childList: true })')) failures.push("Output view observer must stay child-list-only to avoid feedback loops");
 if (workflowUi.includes('observe($("workspaceInspectorHost")') || workflowUi.includes('observe(document.body, { childList: true, subtree: true })')) failures.push("Workflow polish must not add broad subtree observers");
+
+const mobileCss = fs.readFileSync(path.join(root, "mobile-polish.css"), "utf8");
+for (const marker of ["--studio-mobile-vh", ".studio-inspector-mask", ".studio-keyboard-open", "env(safe-area-inset-bottom)", "@media (max-width: 430px)"]) {
+  if (!mobileCss.includes(marker)) failures.push(`Mobile polish CSS marker missing: ${marker}`);
+}
+const mobileUi = fs.readFileSync(path.join(root, "js/ui/mobile-polish.js"), "utf8");
+for (const marker of ["visualViewport", "setupMobileSheetBehavior", "setupKeyboardBehavior", "studioInspectorMask", "studio-keyboard-open"]) {
+  if (!mobileUi.includes(marker)) failures.push(`Mobile polish behavior missing: ${marker}`);
+}
+if (mobileUi.includes("MutationObserver")) failures.push("Mobile polish must stay event-driven and avoid DOM observers");
+if (!mobileUi.includes("interactive-widget=resizes-content") || !mobileUi.includes("viewport-fit=cover")) failures.push("Mobile runtime viewport hardening is missing");
 
 const historyCenter = fs.readFileSync(path.join(root, "js/ui/history-center.js"), "utf8");
 if (!historyCenter.includes("requestIdleCallback")) failures.push("History should defer hidden initial rendering when the browser is busy");
