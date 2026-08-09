@@ -1,0 +1,58 @@
+/* Final concept-A label and chrome alignment */
+.studio-topbar .brand-mark {
+  font-size:0 !important;
+}
+.studio-topbar .brand-mark::before {
+  content:"✦";
+  display:grid;
+  width:100%;
+  height:100%;
+  place-items:center;
+  color:#fff;
+  font-size:19px;
+  line-height:1;
+}
+.studio-topbar .h1 {
+  min-width:154px;
+  font-size:0 !important;
+}
+.studio-topbar .h1::after {
+  content:"Image View Studio";
+  color:#f7f7fb;
+  font-size:15px;
+  font-weight:760;
+  letter-spacing:-.02em;
+}
+.workspace-preview-title > span {
+  font-size:0 !important;
+}
+.workspace-preview-title > span::before {
+  content:"生成结果";
+  color:#f5f5fa;
+  font-size:15px;
+  font-weight:730;
+}
+.workspace-preview-empty strong {
+  font-size:0 !important;
+}
+.workspace-preview-empty strong::before {
+  content:"开始你的创作之旅";
+  color:#f7f7fb;
+  font-size:18px;
+  font-weight:730;
+  letter-spacing:-.02em;
+}
+.workspace-preview-empty p {
+  font-size:0 !important;
+}
+.workspace-preview-empty p::before {
+  content:"描述你的想法，AI 将为你生成精美画面";
+  color:#858c9e;
+  font-size:12px;
+}
+@media (max-width:900px) {
+  .studio-topbar .h1::after { font-size:13px; }
+  .workspace-preview-title > span::before { font-size:13px; }
+  .workspace-preview-empty strong::before { font-size:16px; }
+  .workspace-preview-empty p::before { font-size:11px; }
+}
