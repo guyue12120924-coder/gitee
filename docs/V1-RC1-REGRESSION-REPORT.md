@@ -35,7 +35,33 @@ Runtime / UI freeze commit: `ede63f66f9d31ca06dde7bb4d90f390afc73da53`
 
 During the Creator Studio refinement, the deployed desktop workflow was exercised after the workflow-isolation, Inspector, Composer, upload, duration and gallery changes, and no blocking issue was reported at that point. The later runtime/UI freeze did not add another model/API generation path.
 
-This is useful regression evidence, but it is not a substitute for the explicit final viewport matrix below.
+## Automated browser regression completed
+
+A temporary non-merge PR ran Chrome/Playwright smoke checks against the current RC tree. GitHub Actions run `#100` completed successfully.
+
+Validated viewports:
+
+- Desktop: `1366×768`, `1536×864`, `1920×1080`
+- Mobile: `390×844`, `430×932`
+- Tablet: `768×1024`
+
+The smoke check exercised:
+
+- page load without JavaScript page errors or missing local resources;
+- no horizontal page overflow at the configured viewports;
+- all four workflow navigation buttons and workflow-state switching;
+- Edit original/reference upload-card presence;
+- I2V first-frame upload-card presence;
+- explicit `Wan2_2-I2V-A14B` selection and creator-friendly Wan ratio/quality controls;
+- explicit `HunyuanVideo-1.5` selection and user-facing duration control;
+- Prompt focus and Generate reachability;
+- mobile Inspector Bottom Sheet open/close and viewport bounds;
+- model-menu bounds and no forced mobile search focus;
+- single-result Focus state and 3+ Gallery state;
+- Lightbox open/close;
+- Task / History / Settings Drawer open/close.
+
+The production static audit also passed in the same workflow run.
 
 ## Mobile release-candidate coverage in code
 
@@ -53,23 +79,13 @@ This is useful regression evidence, but it is not a substitute for the explicit 
 
 ## External validation still required before v1.0.0
 
-These checks depend on a real browser/device viewport or on the user's Gitee API credential. They cannot be truthfully marked as executed by repository/static inspection alone.
+### Physical-device behavior
 
-### Desktop viewport matrix
+Headless viewport emulation verifies layout and interaction geometry, but it does not reproduce every OS soft-keyboard or safe-area behavior. A physical-device check remains the strongest validation for:
 
-- 1366×768
-- 1536×864
-- 1920×1080
-
-Check four workflows, model menu, upload cards, Prompt Tools, Focus/Gallery, Lightbox, Task, History and Settings.
-
-### Mobile / tablet viewport matrix
-
-- 390×844
-- 430×932
-- 768×1024
-
-Check workflow navigation, Prompt + soft keyboard, Generate reachability, parameter Bottom Sheet, model menu, upload cards, Drawers, Gallery and Lightbox.
+- real mobile keyboard opening/closing;
+- Home Indicator / notch safe-area behavior;
+- touch scrolling momentum and native file picker behavior.
 
 ### Live Gitee API
 
@@ -87,4 +103,4 @@ The repository/CI must not contain or store the user's API credential.
 
 `1.0.0-rc.1` is the completed repository-side release candidate. The dedicated rollback branch is `release/v1.0.0-rc.1`.
 
-Do not relabel it as `1.0.0` until the browser/device and credential-dependent checks above are confirmed. This keeps the published version claim aligned with the actual validation evidence.
+Automated static and responsive-browser regression now pass. Do not relabel the build as `1.0.0` until the credential-dependent Gitee API smoke test is confirmed; a real-device keyboard/safe-area check is also recommended before the stable label.
