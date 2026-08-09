@@ -4,7 +4,19 @@
 
 `1.0.0-rc.1` — 2026-08-09
 
-Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已完成。当前进入最终人工回归，不再继续增加大型功能。
+Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已完成。当前进入最终外部验证，不再继续增加大型功能。
+
+RC 回滚分支：`release/v1.0.0-rc.1`
+
+## 仓库侧发布准备
+
+- [x] `VERSION` 已固定为 `1.0.0-rc.1`。
+- [x] README 已按当前 Creator Studio 架构重写并标注 RC 状态。
+- [x] `CHANGELOG.md` 已记录 RC 功能、修复、验证边界与版本策略。
+- [x] `docs/V1-RC1-REGRESSION-REPORT.md` 已记录代码级回归和外部验证边界。
+- [x] `docs/RELEASE-NODE.md` 已记录 Runtime/UI freeze commit、RC metadata commit 与回滚分支。
+- [x] `release/v1.0.0-rc.1` 已创建，作为完整 RC 树回滚点。
+- [x] 正式版升级条件保持显式，不会在未完成外部验证时提前改写为 `1.0.0`。
 
 ## 自动 / 代码级检查
 
@@ -25,7 +37,9 @@ Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已�
 - [x] 移动端增强层保持事件驱动，不新增 MutationObserver。
 - [x] `VERSION` / `CHANGELOG.md` / README 版本信息由静态审计保持一致。
 
-## 桌面人工回归
+## 外部验证：桌面人工回归
+
+这些项目需要真实浏览器交互，仓库静态检查不能代替。
 
 建议至少检查 1366×768、1536×864、1920×1080：
 
@@ -42,7 +56,7 @@ Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已�
 - [ ] Settings 的 API Key、主题和开发者设置正常。
 - [ ] 错误 API Key / 空 Prompt / 缺图片不会把模型永久标红。
 
-## 移动端 / 平板人工回归
+## 外部验证：移动端 / 平板人工回归
 
 建议使用浏览器 Device Toolbar 或真实设备检查：390×844、430×932、768×1024。
 
@@ -57,7 +71,7 @@ Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已�
 - [ ] Drawer 在手机使用全屏宽度且内容可滚动。
 - [ ] safe-area 设备底部不会挡住 Composer / Lightbox 操作。
 
-## 真实 Gitee API 冒烟测试
+## 外部验证：真实 Gitee API 冒烟测试
 
 使用用户自己的 API Key，尽量采用最小请求；不要把 Key 写入仓库或 CI。
 
