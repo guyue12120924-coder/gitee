@@ -21,6 +21,7 @@
   let previewModel;
   let emptyPreview;
   let outputObserver;
+  let utilityObserver;
   let drawerMask;
   let openDrawerName = "";
 
@@ -104,6 +105,7 @@
     drawerMask?.classList.add("is-open");
     document.body.classList.add("studio-drawer-open");
     for (const button of document.querySelectorAll(`[data-drawer="${name}"]`)) button.classList.add("is-active");
+    window.dispatchEvent(new CustomEvent("gitee-studio-drawer-open", { detail: { name } }));
   }
 
   function closeDrawers(clearName = true) {
@@ -245,11 +247,15 @@
       pre.insertAdjacentElement("beforebegin", details);
       details.append(summary, pre);
     }
-    const media = item.querySelector("img");
-    if (media) {
-      media.classList.add("studio-preview-media");
-      media.addEventListener("click", () => openLightbox(media.src, item.querySelector("h3")?.textContent || "生成结果"));
+    const image = item.querySelector("img");
+    if (image) {
+      image.loading = "lazy";
+      image.decoding = "async";
+      image.classList.add("studio-preview-media");
+      image.addEventListener("click", () => openLightbox(image.src, item.querySelector("h3")?.textContent || "生成结果"));
     }
+    const video = item.querySelector("video");
+    if (video) video.preload = "metadata";
   }
 
   function openLightbox(src, title) {
@@ -259,7 +265,7 @@
       lightbox = document.createElement("div");
       lightbox.id = "studioLightbox";
       lightbox.className = "studio-lightbox";
-      lightbox.innerHTML = `<button type="button" class="studio-lightbox-close" aria-label="关闭">×</button><div class="studio-lightbox-stage"><img alt="生成结果预览" /></div><div class="studio-lightbox-title"></div>`;
+      lightbox.innerHTML = `<button type="button" class="studio-lightbox-close" aria-label="关闭">×</button><div class="studio-lightbox-stage"><img alt="生成结果预览" decoding="async" /></div><div class="studio-lightbox-title"></div>`;
       lightbox.addEventListener("click", (event) => { if (event.target === lightbox) lightbox.classList.remove("is-open"); });
       lightbox.querySelector(".studio-lightbox-close")?.addEventListener("click", () => lightbox.classList.remove("is-open"));
       document.body.appendChild(lightbox);
@@ -410,6 +416,7 @@
     const historyBody = $("studioDrawerBody-history");
     if (taskCenter && taskBody && taskCenter.parentElement !== taskBody) taskBody.appendChild(taskCenter);
     if (historyCenter && historyBody && historyCenter.parentElement !== historyBody) historyBody.appendChild(historyCenter);
+    return Boolean(taskCenter && historyCenter && taskBody && historyBody && taskCenter.parentElement === taskBody && historyCenter.parentElement === historyBody);
   }
 
   function syncActiveUi() {
@@ -440,7 +447,15 @@
       if (health) new MutationObserver(() => updateModelSummary(conf)).observe(health, { childList: true, subtree: true, characterData: true });
     }
     const container = document.querySelector("main.container");
-    if (container) new MutationObserver(adoptUtilityPanels).observe(container, { childList: true });
+    if (container && !adoptUtilityPanels()) {
+      utilityObserver?.disconnect();
+      utilityObserver = new MutationObserver(() => {
+        if (!adoptUtilityPanels()) return;
+        utilityObserver?.disconnect();
+        utilityObserver = null;
+      });
+      utilityObserver.observe(container, { childList: true });
+    }
   }
 
   function simplifyTopbar() {
