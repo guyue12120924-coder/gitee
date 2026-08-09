@@ -19,6 +19,7 @@ First v1 release candidate. This build freezes the current Creator Studio archit
 - Responsive mobile creator UI with Bottom Sheet parameters, safe-area handling and soft-keyboard adaptation.
 - System / light / dark appearance settings.
 - Static release audit in GitHub Actions.
+- Immutable release-candidate branch `release/v1.0.0-rc.1` for rollback.
 
 ### Changed
 
@@ -42,10 +43,13 @@ First v1 release candidate. This build freezes the current Creator Studio archit
 
 ### Release status
 
-- Code/static audit: release candidate prepared.
-- Desktop creator flow: previously user-tested during iterative development.
-- Mobile browser regression: must still be completed on at least 390×844, 430×932 and 768×1024 before promoting this build to v1.0.0.
-- Live Gitee API smoke tests are not performed automatically by CI because they require a user API credential and can consume quota.
+- Repository-side release candidate packaging is complete.
+- Runtime / UI freeze: `ede63f66f9d31ca06dde7bb4d90f390afc73da53`.
+- RC branch: `release/v1.0.0-rc.1`, created from `f74a1fa64cb0d434ccb8168294db1f14b7795e9e`.
+- Desktop creator flow was user-tested during iterative development; the explicit final desktop viewport matrix remains an external release-gate check.
+- Mobile browser regression must still be confirmed at 390×844, 430×932 and 768×1024 before promotion.
+- Live Gitee API smoke tests are credential-dependent and are not performed automatically by CI or stored in the repository.
+- Until those external checks are confirmed, the release remains `1.0.0-rc.1` rather than being mislabeled as `1.0.0`.
 
 ## Versioning
 
