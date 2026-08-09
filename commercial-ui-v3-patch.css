@@ -1,5 +1,69 @@
-/* Final concept-A label and chrome alignment */
+/* Image View Studio — visual correction from real deployment screenshot */
+
+/* -------------------------------------------------------------------------- */
+/* 1. Brighter dark palette: keep premium contrast without near-black feeling */
+/* -------------------------------------------------------------------------- */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --bg:#111521 !important;
+  --card:#181d2b !important;
+  --muted:#9da6b9 !important;
+  --text:#f6f7fb !important;
+  --line:rgba(196,205,230,.12) !important;
+  --accent:#8b5cf6 !important;
+  --accent2:#a78bfa !important;
+  --input-bg:#151a27 !important;
+  --header-bg:rgba(17,21,33,.94) !important;
+  --footer-bg:rgba(17,21,33,.94) !important;
+  --border-light:rgba(196,205,230,.12) !important;
+  --btn-bg:rgba(255,255,255,.055) !important;
+  --btn-hover-bg:rgba(255,255,255,.095) !important;
+  --modal-bg:#181d2b !important;
+  --studio-canvas:#171b28 !important;
+  --studio-panel:#1a1f2e !important;
+  --studio-soft:rgba(255,255,255,.045) !important;
+  color-scheme:dark !important;
+}
+
+html,
+body {
+  background:#111521 !important;
+}
+body {
+  color:#f6f7fb !important;
+  background:
+    radial-gradient(1000px 620px at 36% -16%,rgba(124,92,246,.18),transparent 62%),
+    radial-gradient(760px 520px at 100% 18%,rgba(74,116,230,.11),transparent 65%),
+    linear-gradient(180deg,#121624 0%,#10141f 100%) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 2. Top bar: never allow task/settings labels to collapse vertically        */
+/* -------------------------------------------------------------------------- */
+.topbar.studio-topbar {
+  min-height:66px !important;
+  border-bottom:1px solid rgba(198,207,232,.11) !important;
+  background:rgba(18,22,34,.94) !important;
+  box-shadow:0 8px 28px rgba(11,15,25,.12) !important;
+}
+.studio-topbar .topbar-main {
+  min-height:66px !important;
+  padding:0 22px !important;
+  gap:16px !important;
+}
+.studio-topbar .topbar-left {
+  flex:0 0 auto !important;
+  min-width:220px !important;
+  gap:11px !important;
+}
 .studio-topbar .brand-mark {
+  width:38px !important;
+  height:38px !important;
+  flex:0 0 38px !important;
+  border-color:rgba(197,178,255,.46) !important;
+  background:linear-gradient(145deg,#7c4dff 0%,#9f62ff 52%,#5c78ff 100%) !important;
+  box-shadow:0 8px 24px rgba(116,76,231,.30) !important;
   font-size:0 !important;
 }
 .studio-topbar .brand-mark::before {
@@ -9,50 +73,439 @@
   height:100%;
   place-items:center;
   color:#fff;
-  font-size:19px;
+  font-size:20px;
   line-height:1;
 }
 .studio-topbar .h1 {
-  min-width:154px;
+  min-width:160px !important;
+  max-width:none !important;
+  overflow:visible !important;
   font-size:0 !important;
+  white-space:nowrap !important;
 }
 .studio-topbar .h1::after {
   content:"Image View Studio";
-  color:#f7f7fb;
+  color:#f7f8fc;
   font-size:15px;
   font-weight:760;
   letter-spacing:-.02em;
 }
-.workspace-preview-title > span {
-  font-size:0 !important;
+.studio-topbar .topbar-right {
+  display:flex !important;
+  flex:0 0 auto !important;
+  min-width:max-content !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:6px !important;
+  margin-left:auto !important;
+  white-space:nowrap !important;
+}
+.studio-topbar .top-icon-btn {
+  display:inline-flex !important;
+  width:auto !important;
+  min-width:68px !important;
+  height:38px !important;
+  flex:0 0 auto !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:6px !important;
+  padding:0 10px !important;
+  border:1px solid transparent !important;
+  border-radius:10px !important;
+  background:transparent !important;
+  color:#a7afc0 !important;
+  line-height:1 !important;
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  writing-mode:horizontal-tb !important;
+}
+.studio-topbar .studio-top-icon {
+  display:inline-flex !important;
+  flex:0 0 auto !important;
+  margin:0 !important;
+  font-size:15px !important;
+  line-height:1 !important;
+}
+.studio-topbar .top-icon-btn > span:not(.studio-top-icon):not(.studio-count-badge) {
+  display:inline !important;
+  width:auto !important;
+  max-width:none !important;
+  overflow:visible !important;
+  white-space:nowrap !important;
+  writing-mode:horizontal-tb !important;
+}
+.studio-topbar .top-icon-btn:hover,
+.studio-topbar .top-icon-btn.is-active {
+  border-color:rgba(198,207,232,.12) !important;
+  background:rgba(255,255,255,.06) !important;
+  color:#fff !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 3. Desktop shell: lock real usable widths so old CSS cannot squeeze it     */
+/* -------------------------------------------------------------------------- */
+@media (min-width:901px) {
+  .container.workspace-ready #workspaceShell,
+  .container.workspace-ready .workspace-shell {
+    display:grid !important;
+    grid-template-columns:184px minmax(0,1fr) 320px !important;
+    grid-template-rows:minmax(610px,calc(100vh - 174px)) auto !important;
+    gap:12px !important;
+  }
+
+  .container.workspace-ready #workspaceRail,
+  .container.workspace-ready .workspace-rail {
+    grid-column:1 !important;
+    grid-row:1 / 3 !important;
+    display:flex !important;
+    width:184px !important;
+    min-width:184px !important;
+    max-width:184px !important;
+    height:calc(100vh - 94px) !important;
+    flex:0 0 184px !important;
+    flex-direction:column !important;
+    padding:11px 9px !important;
+    overflow:visible !important;
+    border:1px solid rgba(198,207,232,.11) !important;
+    border-radius:18px !important;
+    background:
+      radial-gradient(260px 180px at 12% 0%,rgba(139,92,246,.11),transparent 72%),
+      linear-gradient(180deg,rgba(27,32,48,.96),rgba(23,28,42,.96)) !important;
+    box-shadow:0 16px 42px rgba(7,10,17,.18) !important;
+  }
+
+  .workspace-main {
+    min-width:0 !important;
+  }
+  .workspace-inspector {
+    width:320px !important;
+    min-width:320px !important;
+    max-width:320px !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 4. Left navigation: readable labels + non-squeezable icon boxes            */
+/* -------------------------------------------------------------------------- */
+.workspace-rail-workflows {
+  display:grid !important;
+  gap:7px !important;
+}
+.workspace-rail-button {
+  display:flex !important;
+  width:100% !important;
+  min-width:0 !important;
+  min-height:55px !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  padding:9px 10px !important;
+  overflow:visible !important;
+  border-radius:12px !important;
+  color:#a0a9bc !important;
+  white-space:nowrap !important;
+}
+.workspace-rail-icon {
+  display:grid !important;
+  width:34px !important;
+  min-width:34px !important;
+  max-width:34px !important;
+  height:34px !important;
+  min-height:34px !important;
+  flex:0 0 34px !important;
+  place-items:center !important;
+  overflow:hidden !important;
+  border-radius:10px !important;
+  background:rgba(255,255,255,.05) !important;
+  font-size:17px !important;
+  line-height:1 !important;
+}
+.workspace-rail-icon svg {
+  width:18px !important;
+  min-width:18px !important;
+  height:18px !important;
+}
+.workspace-rail-label {
+  display:block !important;
+  width:auto !important;
+  min-width:0 !important;
+  overflow:visible !important;
+  color:inherit !important;
+  font-size:12.5px !important;
+  font-weight:670 !important;
+  line-height:1.2 !important;
+  white-space:nowrap !important;
+  word-break:keep-all !important;
+  writing-mode:horizontal-tb !important;
+}
+.workspace-rail-button:hover {
+  border-color:rgba(198,207,232,.10) !important;
+  background:rgba(255,255,255,.055) !important;
+  color:#eef0f7 !important;
+}
+.workspace-rail-button.is-active {
+  border-color:rgba(168,133,255,.46) !important;
+  background:linear-gradient(125deg,rgba(139,92,246,.28),rgba(103,83,208,.15)) !important;
+  color:#fff !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 24px rgba(82,56,162,.16) !important;
+}
+.workspace-rail-button.is-active .workspace-rail-icon {
+  background:rgba(159,119,255,.20) !important;
+  color:#d8c8ff !important;
+}
+.workspace-rail-utility {
+  display:grid !important;
+  gap:6px !important;
+  margin-top:auto !important;
+  padding-top:10px !important;
+  border-top:1px solid rgba(198,207,232,.08) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 5. Main surfaces: lift brightness and hierarchy                            */
+/* -------------------------------------------------------------------------- */
+.workspace-output-card {
+  border-color:rgba(198,207,232,.11) !important;
+  background:
+    radial-gradient(760px 420px at 40% -10%,rgba(139,92,246,.11),transparent 66%),
+    linear-gradient(180deg,#1a1f2e 0%,#171c29 100%) !important;
+  box-shadow:0 18px 48px rgba(8,11,18,.16) !important;
+}
+.workspace-preview-summary {
+  border-bottom-color:rgba(198,207,232,.09) !important;
 }
 .workspace-preview-title > span::before {
   content:"生成结果";
-  color:#f5f5fa;
+  color:#f5f6fb;
   font-size:15px;
   font-weight:730;
 }
-.workspace-preview-empty strong {
-  font-size:0 !important;
+.workspace-preview-title > strong {
+  border-color:rgba(198,207,232,.10) !important;
+  background:rgba(255,255,255,.055) !important;
+  color:#a8b0c0 !important;
+}
+.workspace-preview-empty {
+  min-height:calc(100vh - 306px) !important;
+  border-color:rgba(198,207,232,.075) !important;
+  background:
+    radial-gradient(520px 290px at 50% 40%,rgba(139,92,246,.12),transparent 72%),
+    linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.008)) !important;
+}
+.workspace-empty-art {
+  border-color:rgba(177,147,255,.36) !important;
+  background:linear-gradient(145deg,rgba(139,92,246,.28),rgba(91,117,232,.12)) !important;
+  color:#d3c3ff !important;
+  box-shadow:0 14px 36px rgba(78,50,159,.17),inset 0 1px 0 rgba(255,255,255,.08) !important;
 }
 .workspace-preview-empty strong::before {
   content:"开始你的创作之旅";
-  color:#f7f7fb;
+  color:#f7f8fc;
   font-size:18px;
   font-weight:730;
-  letter-spacing:-.02em;
-}
-.workspace-preview-empty p {
-  font-size:0 !important;
 }
 .workspace-preview-empty p::before {
   content:"描述你的想法，AI 将为你生成精美画面";
-  color:#858c9e;
+  color:#9ba4b6;
   font-size:12px;
 }
+
+.workspace-inspector {
+  border-color:rgba(198,207,232,.11) !important;
+  background:linear-gradient(180deg,#1b2030 0%,#181d2a 100%) !important;
+  box-shadow:0 16px 42px rgba(7,10,17,.15) !important;
+}
+.workspace-inspector-head {
+  border-bottom-color:rgba(198,207,232,.09) !important;
+  background:rgba(27,32,48,.96) !important;
+}
+.workspace-inspector .input,
+.workspace-inspector .textarea,
+.workspace-inspector .mp-control,
+.studio-model-trigger,
+.studio-model-search {
+  border-color:rgba(198,207,232,.11) !important;
+  background:#151b29 !important;
+  color:#f3f5fa !important;
+}
+.workspace-inspector .input:hover,
+.workspace-inspector .textarea:hover,
+.workspace-inspector .mp-control:hover,
+.studio-model-trigger:hover {
+  border-color:rgba(177,147,255,.30) !important;
+  background:#182031 !important;
+}
+.studio-friendly-option,
+.studio-choice-button,
+.workspace-inspector .mp-check {
+  border-color:rgba(198,207,232,.11) !important;
+  background:rgba(255,255,255,.045) !important;
+  color:#a8b1c2 !important;
+}
+.studio-friendly-option.is-active,
+.studio-choice-button.is-active,
+.workspace-inspector .mp-check:has(input:checked) {
+  border-color:rgba(169,132,255,.52) !important;
+  background:linear-gradient(180deg,rgba(139,92,246,.24),rgba(105,84,204,.14)) !important;
+  color:#e2d7ff !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 6. Composer: shorter, cleaner, lighter                                     */
+/* -------------------------------------------------------------------------- */
+.workspace-composer {
+  bottom:10px !important;
+  padding:8px 9px !important;
+  border-color:rgba(169,132,255,.34) !important;
+  border-radius:15px !important;
+  background:
+    radial-gradient(520px 140px at 75% 120%,rgba(139,92,246,.13),transparent 72%),
+    rgba(25,30,44,.96) !important;
+  box-shadow:0 14px 38px rgba(7,10,17,.20),inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+.workspace-composer:focus-within {
+  border-color:rgba(181,151,255,.58) !important;
+  box-shadow:0 16px 42px rgba(7,10,17,.23),0 0 0 3px rgba(139,92,246,.08) !important;
+}
+.workspace-composer-slot {
+  grid-template-columns:minmax(0,1fr) auto !important;
+  gap:8px !important;
+  align-items:end !important;
+}
+.workspace-composer-input {
+  min-height:48px !important;
+  max-height:96px !important;
+  padding:8px 11px !important;
+  color:#f4f6fb !important;
+  font-size:12.5px !important;
+  line-height:1.45 !important;
+}
+.workspace-composer-input::placeholder {
+  color:#7f899d !important;
+}
+.workspace-composer .prompt-toolbox {
+  margin:0 0 2px 1px !important;
+}
+.workspace-composer .prompt-toolbox-actions {
+  gap:5px !important;
+}
+.workspace-composer .prompt-toolbox .btn {
+  min-height:29px !important;
+  padding:0 8px !important;
+  border-color:rgba(198,207,232,.09) !important;
+  background:rgba(255,255,255,.045) !important;
+  color:#9ca6b8 !important;
+  font-size:9.8px !important;
+}
+.workspace-generate-button {
+  width:auto !important;
+  min-width:108px !important;
+  height:44px !important;
+  flex:0 0 auto !important;
+  border-color:rgba(202,181,255,.50) !important;
+  background:linear-gradient(135deg,#8155f5 0%,#9f69ff 52%,#687fff 100%) !important;
+  box-shadow:0 8px 24px rgba(101,66,218,.26) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 7. Upload / popovers / result cards: soften black surfaces                 */
+/* -------------------------------------------------------------------------- */
+.studio-upload-card {
+  border-color:rgba(169,132,255,.34) !important;
+  background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(255,255,255,.025)) !important;
+}
+.studio-model-menu,
+.studio-drawer {
+  background:linear-gradient(180deg,#1b2030,#171c29) !important;
+  border-color:rgba(198,207,232,.11) !important;
+}
+.workspace-output-card .output .item,
+.studio-media-card {
+  border-color:rgba(198,207,232,.10) !important;
+  background:#151a27 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. Medium desktop: preserve labels instead of collapsing to icon-only      */
+/* -------------------------------------------------------------------------- */
+@media (max-width:1280px) and (min-width:901px) {
+  .container.workspace-ready #workspaceShell,
+  .container.workspace-ready .workspace-shell {
+    grid-template-columns:156px minmax(0,1fr) 292px !important;
+  }
+  .container.workspace-ready #workspaceRail,
+  .container.workspace-ready .workspace-rail {
+    width:156px !important;
+    min-width:156px !important;
+    max-width:156px !important;
+    flex-basis:156px !important;
+  }
+  .workspace-inspector {
+    width:292px !important;
+    min-width:292px !important;
+    max-width:292px !important;
+  }
+  .workspace-rail-button {
+    min-height:52px !important;
+    gap:8px !important;
+    padding:8px !important;
+  }
+  .workspace-rail-icon {
+    width:30px !important;
+    min-width:30px !important;
+    max-width:30px !important;
+    height:30px !important;
+    min-height:30px !important;
+    flex-basis:30px !important;
+  }
+  .workspace-rail-label {
+    display:block !important;
+    font-size:11px !important;
+  }
+  .studio-topbar .top-icon-btn {
+    min-width:62px !important;
+    padding:0 8px !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. Mobile keeps icon-only top actions but no squeezing / vertical text     */
+/* -------------------------------------------------------------------------- */
 @media (max-width:900px) {
-  .studio-topbar .h1::after { font-size:13px; }
-  .workspace-preview-title > span::before { font-size:13px; }
-  .workspace-preview-empty strong::before { font-size:16px; }
-  .workspace-preview-empty p::before { font-size:11px; }
+  .studio-topbar .topbar-left {
+    min-width:0 !important;
+  }
+  .studio-topbar .h1 {
+    min-width:0 !important;
+    max-width:46vw !important;
+    overflow:hidden !important;
+  }
+  .studio-topbar .h1::after {
+    font-size:13px;
+  }
+  .studio-topbar .topbar-right {
+    min-width:0 !important;
+    gap:3px !important;
+  }
+  .studio-topbar .top-icon-btn {
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    padding:0 !important;
+  }
+  .studio-topbar .top-icon-btn > span:not(.studio-top-icon):not(.studio-count-badge) {
+    display:none !important;
+  }
+  .workspace-rail-icon {
+    width:28px !important;
+    min-width:28px !important;
+    max-width:28px !important;
+    height:28px !important;
+    min-height:28px !important;
+    flex-basis:28px !important;
+  }
+  .workspace-composer-input {
+    min-height:48px !important;
+  }
 }
