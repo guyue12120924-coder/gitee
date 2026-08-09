@@ -18,3 +18,11 @@ jobs:
           node-version: '22'
       - name: Run static audit
         run: node scripts/static-check.mjs
+      - name: Run responsive browser smoke
+        shell: bash
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME_PATH"
+          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          npm install --no-save --ignore-scripts playwright-core@1.55.0
+          node scripts/browser-smoke.mjs
