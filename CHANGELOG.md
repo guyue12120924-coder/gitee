@@ -19,7 +19,7 @@ First v1 release candidate. This build freezes the current Creator Studio archit
 - Responsive mobile creator UI with Bottom Sheet parameters, safe-area handling and soft-keyboard adaptation.
 - System / light / dark appearance settings.
 - Static release audit in GitHub Actions.
-- Immutable release-candidate branch `release/v1.0.0-rc.1` for rollback.
+- Dedicated release-candidate branch `release/v1.0.0-rc.1` for rollback.
 
 ### Changed
 
