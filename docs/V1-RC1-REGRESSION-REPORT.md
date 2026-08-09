@@ -6,6 +6,12 @@ Date: 2026-08-09
 
 This report freezes the current v1 release candidate after the Creator Studio, performance cleanup and mobile-specific polish passes.
 
+Release-candidate branch: `release/v1.0.0-rc.1`
+
+RC metadata commit: `f74a1fa64cb0d434ccb8168294db1f14b7795e9e`
+
+Runtime / UI freeze commit: `ede63f66f9d31ca06dde7bb4d90f390afc73da53`
+
 ## Code-level regression completed
 
 - Four workflow routing remains centralized through the original compatibility selector and task-specific model selectors.
@@ -23,6 +29,13 @@ This report freezes the current v1 release candidate after the Creator Studio, p
 - Download proxy validates HTTPS targets and redirects and blocks private-network targets.
 - Generated media uses lazy image decoding / metadata-only video preload.
 - API Key is masked in static HTML before enhancement JavaScript runs.
+- Release metadata is protected by static checks so `VERSION`, README and CHANGELOG cannot silently drift.
+
+## User-validated behavior during the iterative desktop pass
+
+During the Creator Studio refinement, the deployed desktop workflow was exercised after the workflow-isolation, Inspector, Composer, upload, duration and gallery changes, and no blocking issue was reported at that point. The later runtime/UI freeze did not add another model/API generation path.
+
+This is useful regression evidence, but it is not a substitute for the explicit final viewport matrix below.
 
 ## Mobile release-candidate coverage in code
 
@@ -38,9 +51,11 @@ This report freezes the current v1 release candidate after the Creator Studio, p
 - 430px narrow-layout overrides
 - iOS input font-size protection against automatic zoom
 
-## Manual regression still required before v1.0.0
+## External validation still required before v1.0.0
 
-### Desktop
+These checks depend on a real browser/device viewport or on the user's Gitee API credential. They cannot be truthfully marked as executed by repository/static inspection alone.
+
+### Desktop viewport matrix
 
 - 1366×768
 - 1536×864
@@ -48,7 +63,7 @@ This report freezes the current v1 release candidate after the Creator Studio, p
 
 Check four workflows, model menu, upload cards, Prompt Tools, Focus/Gallery, Lightbox, Task, History and Settings.
 
-### Mobile / tablet
+### Mobile / tablet viewport matrix
 
 - 390×844
 - 430×932
@@ -68,6 +83,8 @@ Use the user's own API credential and smallest practical requests:
 
 The repository/CI must not contain or store the user's API credential.
 
-## Promotion rule
+## Release decision
 
-Promote `1.0.0-rc.1` to `1.0.0` only after the manual desktop/mobile regression above succeeds and no release-blocking API regression is found.
+`1.0.0-rc.1` is the completed repository-side release candidate. The immutable rollback branch is `release/v1.0.0-rc.1`.
+
+Do not relabel it as `1.0.0` until the browser/device and credential-dependent checks above are confirmed. This keeps the published version claim aligned with the actual validation evidence.
