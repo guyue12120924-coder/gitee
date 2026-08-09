@@ -1,0 +1,32 @@
+/* Final review corrections: keep visual polish truthful and cross-browser. */
+
+/* Do not imply a project/autosave feature that is not implemented. */
+.studio-topbar .topbar-main::before {
+  content: "AI 创作工作台" !important;
+  width: auto !important;
+  color: #8f95a5 !important;
+  font-size: 11px !important;
+  font-weight: 620 !important;
+  line-height: 1 !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
+}
+.studio-topbar .topbar-main::after { display: none !important; }
+
+/* Safari/WebKit support for the subtle gradient composer border. */
+.workspace-composer::before {
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+}
+
+/* Keep controls comfortably readable on desktop without making the inspector dense. */
+@media (min-width: 901px) {
+  .workspace-inspector .lab,
+  .workspace-inspector .mp-label { font-size: 12px !important; }
+  .workspace-inspector .mp-field-help,
+  .workspace-inspector .hint { font-size: 11px !important; }
+}
+
+@media (max-width: 1180px) {
+  .studio-topbar .topbar-main::before { display: none !important; }
+}
