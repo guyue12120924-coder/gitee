@@ -1,0 +1,302 @@
+/* Image View Studio — V5 safe visual polish
+   CSS-only refinement on top of the last confirmed clickable build.
+   No layout overlays, no pointer-event interception, no JS dependencies. */
+
+/* ---------- Interaction safety ---------- */
+.workspace-ready button,
+.workspace-ready input,
+.workspace-ready textarea,
+.workspace-ready select,
+.workspace-ready a,
+.workspace-ready summary,
+.studio-topbar button,
+.studio-topbar a {
+  pointer-events:auto !important;
+}
+.workspace-ready *::before,
+.workspace-ready *::after,
+.studio-topbar *::before,
+.studio-topbar *::after {
+  pointer-events:none !important;
+}
+
+/* ---------- Overall tone: brighter deep blue-gray, less black ---------- */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --bg:#121a2a !important;
+  --card:#1a2435 !important;
+  --muted:#a0abbd !important;
+  --text:#f7f9fc !important;
+  --input-bg:#151f30 !important;
+  --studio-canvas:#1c2638 !important;
+  --studio-panel:#172131 !important;
+  --border-light:rgba(255,255,255,.09) !important;
+  --btn-bg:rgba(255,255,255,.055) !important;
+  --btn-hover-bg:rgba(255,255,255,.085) !important;
+}
+html,body { background:#121a2a !important; }
+body {
+  background:
+    radial-gradient(880px 480px at 42% -14%,rgba(124,92,245,.115),transparent 64%),
+    radial-gradient(720px 480px at 100% 15%,rgba(70,115,225,.075),transparent 66%),
+    linear-gradient(180deg,#141d2e 0%,#121a2a 58%,#111827 100%) !important;
+}
+
+/* ---------- Top bar ---------- */
+.topbar.studio-topbar {
+  background:rgba(18,26,42,.94) !important;
+  border-bottom-color:rgba(255,255,255,.075) !important;
+}
+.studio-top-context {
+  min-height:auto !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  color:#94a0b4 !important;
+  font-size:10.5px !important;
+  font-weight:600 !important;
+  gap:7px !important;
+  box-shadow:none !important;
+  pointer-events:none !important;
+}
+.studio-top-context strong { color:#cbd3df !important; font-weight:680 !important; }
+.studio-top-context strong::after {
+  content:"·";
+  margin-left:7px;
+  color:#68758b;
+  font-weight:400;
+}
+.studio-topbar .top-icon-btn {
+  min-width:58px !important;
+  padding:0 10px !important;
+  color:#9ea9ba !important;
+}
+.studio-topbar .top-icon-btn:hover,
+.studio-topbar .top-icon-btn.is-active {
+  background:rgba(255,255,255,.045) !important;
+  border-color:rgba(255,255,255,.065) !important;
+}
+
+/* ---------- Left navigation ---------- */
+.workspace-rail {
+  background:linear-gradient(180deg,#192334 0%,#161f2f 100%) !important;
+  border-color:rgba(255,255,255,.075) !important;
+}
+.workspace-rail-button {
+  min-height:52px !important;
+  gap:10px !important;
+  padding:8px 10px !important;
+  color:#a7b1c1 !important;
+  border-radius:11px !important;
+}
+.workspace-rail-button:hover {
+  background:rgba(255,255,255,.04) !important;
+  color:#eef2f7 !important;
+}
+.workspace-rail-button.is-active {
+  border-color:rgba(151,116,255,.32) !important;
+  background:linear-gradient(120deg,rgba(119,82,221,.20),rgba(92,70,168,.10)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+.workspace-rail-button.is-active::after { display:none !important; }
+.workspace-rail-icon {
+  width:32px !important;
+  height:32px !important;
+  flex:0 0 32px !important;
+  border-radius:9px !important;
+  background:rgba(255,255,255,.04) !important;
+}
+.workspace-rail-button.is-active .workspace-rail-icon {
+  background:rgba(145,105,255,.14) !important;
+  color:#d8cbff !important;
+  box-shadow:none !important;
+}
+.workspace-rail-label { font-size:12.5px !important; font-weight:650 !important; }
+
+/* ---------- Canvas ---------- */
+.workspace-output-card {
+  border-color:rgba(255,255,255,.08) !important;
+  background:
+    radial-gradient(700px 360px at 44% -8%,rgba(120,88,235,.065),transparent 68%),
+    linear-gradient(180deg,#202a3c 0%,#1b2536 100%) !important;
+  box-shadow:0 14px 38px rgba(5,10,20,.14) !important;
+}
+.workspace-preview-summary {
+  min-height:44px !important;
+  margin-bottom:8px !important;
+  padding:0 3px 9px !important;
+  border-bottom-color:rgba(255,255,255,.05) !important;
+}
+.workspace-preview-title > span {
+  color:#f4f6fa !important;
+  font-size:14.5px !important;
+  font-weight:720 !important;
+}
+.workspace-preview-title > strong {
+  min-height:21px !important;
+  padding:0 7px !important;
+  border-color:rgba(255,255,255,.055) !important;
+  background:rgba(255,255,255,.032) !important;
+  color:#98a4b6 !important;
+  font-size:9.5px !important;
+}
+.workspace-preview-action {
+  min-height:30px !important;
+  padding:0 8px !important;
+  color:#929daf !important;
+}
+.workspace-preview-action:hover { color:#eef2f7 !important; background:rgba(255,255,255,.04) !important; }
+
+/* Empty state: remove the boxed-within-a-box feeling */
+.workspace-preview-empty {
+  min-height:calc(100vh - 292px) !important;
+  border-color:transparent !important;
+  background:
+    radial-gradient(500px 270px at 50% 39%,rgba(132,100,243,.075),transparent 70%),
+    transparent !important;
+  box-shadow:none !important;
+}
+.workspace-empty-art {
+  width:58px !important;
+  height:58px !important;
+  border-radius:16px !important;
+  border-color:rgba(158,126,255,.20) !important;
+  background:linear-gradient(145deg,rgba(130,94,238,.15),rgba(88,110,211,.045)) !important;
+  box-shadow:0 12px 34px rgba(72,48,151,.10) !important;
+}
+.workspace-preview-empty strong { font-size:17px !important; }
+.workspace-preview-empty p { color:#98a4b7 !important; font-size:11.5px !important; }
+.studio-empty-actions { gap:7px !important; margin-top:14px !important; }
+.studio-empty-action {
+  min-height:32px !important;
+  padding:0 11px !important;
+  border-color:rgba(255,255,255,.065) !important;
+  background:rgba(255,255,255,.028) !important;
+  color:#aab4c4 !important;
+  font-size:10.5px !important;
+}
+.studio-empty-action:hover {
+  border-color:rgba(153,119,255,.30) !important;
+  background:rgba(128,91,236,.075) !important;
+  color:#f1efff !important;
+}
+
+/* ---------- Inspector ---------- */
+.workspace-inspector {
+  background:linear-gradient(180deg,#182233 0%,#151f2f 100%) !important;
+  border-color:rgba(255,255,255,.075) !important;
+}
+.workspace-inspector-head {
+  background:rgba(25,35,52,.90) !important;
+  border-bottom-color:rgba(255,255,255,.055) !important;
+}
+.workspace-inspector-title > span {
+  color:#8f9bad !important;
+  font-size:10.5px !important;
+  letter-spacing:.02em;
+}
+.workspace-inspector-title > strong {
+  color:#f3f6fa !important;
+  font-size:14.5px !important;
+}
+.workspace-inspector .lab,
+.workspace-inspector .mp-label {
+  color:#b7c0ce !important;
+  font-size:11.5px !important;
+  font-weight:650 !important;
+}
+.studio-model-trigger {
+  min-height:56px !important;
+  background:rgba(18,27,41,.68) !important;
+  border-color:rgba(255,255,255,.075) !important;
+}
+.studio-friendly-option,
+.studio-choice-button,
+.workspace-inspector .mp-check {
+  min-height:36px !important;
+  background:rgba(255,255,255,.03) !important;
+  border-color:rgba(255,255,255,.065) !important;
+}
+.studio-friendly-option.is-active,
+.studio-choice-button.is-active,
+.workspace-inspector .mp-check:has(input:checked) {
+  background:rgba(128,91,236,.12) !important;
+  border-color:rgba(154,119,255,.36) !important;
+  color:#e4dcff !important;
+  box-shadow:none !important;
+}
+.studio-model-developer-tools > summary {
+  color:#9ba6b7 !important;
+  font-size:10.8px !important;
+}
+
+/* ---------- Prompt composer ---------- */
+.workspace-composer {
+  padding:8px 9px !important;
+  border-color:rgba(145,111,255,.23) !important;
+  background:
+    radial-gradient(480px 110px at 76% 120%,rgba(113,80,229,.07),transparent 72%),
+    linear-gradient(180deg,rgba(27,37,54,.985),rgba(23,32,48,.985)) !important;
+  box-shadow:0 10px 30px rgba(5,10,20,.17),inset 0 1px 0 rgba(255,255,255,.03) !important;
+}
+.workspace-composer:focus-within {
+  border-color:rgba(158,123,255,.42) !important;
+  box-shadow:0 11px 32px rgba(5,10,20,.18),0 0 0 2px rgba(124,88,238,.045) !important;
+}
+.workspace-composer-input {
+  min-height:52px !important;
+  max-height:102px !important;
+  padding:9px 10px !important;
+  color:#f3f6fa !important;
+  font-size:12.5px !important;
+  line-height:1.5 !important;
+}
+.workspace-composer-input::placeholder { color:#8490a3 !important; }
+.workspace-generate-button {
+  min-width:104px !important;
+  height:42px !important;
+  border-radius:10px !important;
+  box-shadow:0 7px 21px rgba(98,65,213,.22) !important;
+}
+.workspace-composer .prompt-toolbox-actions { gap:5px !important; }
+.workspace-composer .prompt-toolbox .btn {
+  min-height:30px !important;
+  padding:0 9px !important;
+  border-color:rgba(255,255,255,.05) !important;
+  background:rgba(255,255,255,.025) !important;
+  color:#98a4b5 !important;
+}
+.workspace-composer .prompt-toolbox .btn:hover {
+  background:rgba(255,255,255,.055) !important;
+  color:#eef2f7 !important;
+}
+/* Stable JS already writes the real button text. Never duplicate it with pseudo content. */
+.pt-enhance { font-size:10px !important; }
+.pt-enhance::before,
+.pt-enhance::after { content:none !important; display:none !important; }
+
+/* ---------- Result cards ---------- */
+.workspace-output-card .output .item,
+.studio-media-card {
+  border-color:rgba(255,255,255,.07) !important;
+  background:#111927 !important;
+  box-shadow:0 10px 28px rgba(5,10,20,.16) !important;
+}
+.studio-media-card:hover {
+  border-color:rgba(255,255,255,.12) !important;
+  box-shadow:0 16px 38px rgba(5,10,20,.22) !important;
+}
+
+@media (max-width:1180px) {
+  .studio-top-context { display:none !important; }
+}
+@media (max-width:900px) {
+  .studio-topbar .top-icon-btn { min-width:34px !important; padding:0 !important; }
+  .workspace-rail-button { min-height:45px !important; padding:5px 3px !important; }
+  .workspace-preview-empty { min-height:330px !important; }
+  .workspace-composer { padding:7px !important; }
+  .workspace-composer-input { min-height:49px !important; max-height:90px !important; }
+  .workspace-generate-button { min-width:86px !important; height:43px !important; }
+}
