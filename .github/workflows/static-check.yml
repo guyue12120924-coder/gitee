@@ -23,6 +23,6 @@ jobs:
         run: |
           CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
           test -n "$CHROME_PATH"
-          echo "CHROME_PATH=$CHROME_PATH" >> "$GITHUB_ENV"
+          export CHROME_PATH
           npm install --no-save --ignore-scripts playwright-core@1.55.0
           node scripts/browser-smoke.mjs
