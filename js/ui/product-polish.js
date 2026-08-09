@@ -112,6 +112,12 @@
     if (!media || item.dataset.productMediaDecorated === "1") return;
     item.dataset.productMediaDecorated = "1";
     const image = media.tagName === "IMG" ? media : null;
+    if (image) {
+      image.loading = "lazy";
+      image.decoding = "async";
+    } else if (media.tagName === "VIDEO") {
+      media.preload = "metadata";
+    }
     requestAnimationFrame(() => {
       ensureDownloadAction(item, image);
       collapseNativeActions(item);
@@ -121,29 +127,20 @@
   function syncGalleryMode() {
     const output = $("output");
     if (!output) return;
-    const items = [...output.querySelectorAll(":scope > .item")];
-    for (const item of items) decorateMediaCard(item);
-    const mediaItems = items.filter((item) => item.querySelector("img,video"));
-    output.classList.remove("studio-gallery-one", "studio-gallery-two", "studio-gallery-many");
-    if (mediaItems.length === 1) output.classList.add("studio-gallery-one");
-    else if (mediaItems.length === 2) output.classList.add("studio-gallery-two");
-    else if (mediaItems.length > 2) output.classList.add("studio-gallery-many");
+    for (const item of output.querySelectorAll(":scope > .item")) decorateMediaCard(item);
   }
 
   function setupFocusGallery() {
     const output = $("output");
     if (!output) return;
-    let queued = false;
-    const schedule = () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(() => {
-        queued = false;
-        syncGalleryMode();
-      });
-    };
-    new MutationObserver(schedule).observe(output, { childList: true, subtree: true });
-    schedule();
+    new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1 && node.matches?.(".item")) decorateMediaCard(node);
+        }
+      }
+    }).observe(output, { childList: true });
+    syncGalleryMode();
   }
 
   function matchingMediaCard(src) {
@@ -186,11 +183,8 @@
 
   function setupLightboxObserver() {
     document.addEventListener("click", (event) => {
-      if (event.target?.matches?.("#output img.studio-preview-media")) setTimeout(syncLightboxActions, 0);
+      if (event.target?.matches?.("#output img.studio-preview-media")) requestAnimationFrame(syncLightboxActions);
     }, true);
-    new MutationObserver(() => {
-      if ($("studioLightbox")) syncLightboxActions();
-    }).observe(document.body, { childList: true });
   }
 
   function closeAllModelMenus(except = null) {
@@ -340,21 +334,24 @@
       event.stopPropagation();
       const next = !picker.classList.contains("is-open");
       closeAllModelMenus(picker);
+      if (next) rebuildModelMenu(select, picker);
       picker.classList.toggle("is-open", next);
       trigger.setAttribute("aria-expanded", next ? "true" : "false");
-      if (next) picker.querySelector(".studio-model-search")?.focus();
+      if (next) requestAnimationFrame(() => picker.querySelector(".studio-model-search")?.focus());
     });
     select.addEventListener("change", () => syncModelPicker(select));
     let queued = false;
     new MutationObserver(() => {
-      if (queued) return;
+      picker.dataset.optionsSignature = "";
+      syncModelPicker(select);
+      if (!picker.classList.contains("is-open") || queued) return;
       queued = true;
       requestAnimationFrame(() => {
         queued = false;
         rebuildModelMenu(select, picker);
       });
     }).observe(select, { childList: true, subtree: true });
-    rebuildModelMenu(select, picker);
+    syncModelPicker(select);
   }
 
   function setupModelSelectors() {
@@ -437,13 +434,10 @@
   }
 
   function setupSettingsProduct() {
-    if (!buildSettings()) {
-      let attempts = 0;
-      const timer = setInterval(() => {
-        attempts += 1;
-        if (buildSettings() || attempts > 30) clearInterval(timer);
-      }, 100);
-    }
+    buildSettings();
+    window.addEventListener("gitee-studio-drawer-open", (event) => {
+      if (event.detail?.name === "settings") buildSettings();
+    });
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     media.addEventListener?.("change", () => {
       if (currentThemeMode() === "system") applyThemeMode("system");
