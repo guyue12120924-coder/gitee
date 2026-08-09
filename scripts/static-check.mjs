@@ -41,6 +41,8 @@ notes.push(`checked ${ids.length} static HTML ids`);
 for (const stylesheet of ["styles.css", "workspace.css", "creation-tools.css", "studio-extras.css", "product-polish.css", "workflow-polish.css"]) {
   if (!html.includes(`href="./${stylesheet}"`)) failures.push(`Missing stylesheet in index.html: ${stylesheet}`);
 }
+if (!html.includes('id="apiKey" class="input" type="password"')) failures.push("API key must be masked in the static HTML before UI enhancement loads");
+if (!html.includes('loading="lazy" decoding="async" fetchpriority="low"')) failures.push("Hidden donation media should stay off the critical rendering path");
 
 const requiredOrder = [
   "app.js",
@@ -88,6 +90,9 @@ if (workspace.includes("studioQuickModel")) failures.push("Bottom composer must 
 if (!workspace.includes("enhanceOutputItem")) failures.push("Workspace gallery enhancement is missing");
 if (!workspace.includes("studio-output-debug")) failures.push("Raw output JSON must be collapsed behind debug details");
 if (!workspace.includes('history.dataset.drawer = "history"')) failures.push("Desktop rail should keep a single history utility entry");
+if (!workspace.includes("utilityObserver?.disconnect()")) failures.push("Temporary utility-panel observer must disconnect after adoption");
+if (!workspace.includes('gitee-studio-drawer-open')) failures.push("Workspace drawer lifecycle event is missing");
+if (!workspace.includes('image.loading = "lazy"') || !workspace.includes('video.preload = "metadata"')) failures.push("Generated media should use lazy image decoding and metadata-only video preload");
 
 const workspaceCss = fs.readFileSync(path.join(root, "workspace.css"), "utf8");
 for (const marker of [".workspace-rail", ".workspace-inspector", ".workspace-composer", ".studio-drawer", ".studio-lightbox"]) {
@@ -110,11 +115,13 @@ const productUi = fs.readFileSync(path.join(root, "js/ui/product-polish.js"), "u
 for (const marker of ["setupFocusGallery", "setupUnifiedIcons", "decorateModelSelect", "setupModelSelectors", "buildSettings", "applyThemeMode", "syncLightboxActions"]) {
   if (!productUi.includes(marker)) failures.push(`Product polish behavior missing: ${marker}`);
 }
-if (!productUi.includes("studio-gallery-one")) failures.push("Single-result focus view is missing");
-if (!productUi.includes("studio-gallery-two")) failures.push("Two-result gallery mode is missing");
 if (!productUi.includes("moark_theme_mode")) failures.push("Settings must persist system/light/dark appearance mode");
 if (!productUi.includes("REGISTRY?.model")) failures.push("Custom model picker must read model metadata from Registry");
 if (!productUi.includes("studio-download-action")) failures.push("Gallery overlay must preserve direct download access");
+if (!productUi.includes('if (next) rebuildModelMenu(select, picker);')) failures.push("Model menus should be built lazily on first open");
+if (productUi.includes('observe(output, { childList: true, subtree: true })')) failures.push("Gallery observer must stay top-level child-list-only");
+if (productUi.includes('observe(document.body, { childList: true })')) failures.push("Lightbox actions must not rely on a persistent body observer");
+if (productUi.includes("setInterval(() =>")) failures.push("Settings initialization should not poll the DOM with a repeated interval");
 
 const workflowCss = fs.readFileSync(path.join(root, "workflow-polish.css"), "utf8");
 for (const marker of [".studio-upload-card", ".studio-human-duration", ".studio-friendly-options", ".studio-technical-primary-hidden", ".workspace-ready .global-loading"]) {
@@ -128,8 +135,15 @@ for (const marker of ["reorderWorkflowInputs", "ensureHunyuanDuration", "ensureW
   if (!workflowUi.includes(marker)) failures.push(`Workflow polish behavior missing: ${marker}`);
 }
 if (!workflowUi.includes('item.dataset.studioWorkflow')) failures.push("Output items must be assigned to a workflow-specific Canvas view");
+if (!workflowUi.includes('studio-gallery-one') || !workflowUi.includes('studio-gallery-two') || !workflowUi.includes('studio-gallery-many')) failures.push("Workflow-specific Canvas must own gallery layout classes");
 if (!workflowUi.includes('new MutationObserver') || !workflowUi.includes('observe(output, { childList: true })')) failures.push("Output view observer must stay child-list-only to avoid feedback loops");
 if (workflowUi.includes('observe($("workspaceInspectorHost")') || workflowUi.includes('observe(document.body, { childList: true, subtree: true })')) failures.push("Workflow polish must not add broad subtree observers");
+
+const historyCenter = fs.readFileSync(path.join(root, "js/ui/history-center.js"), "utf8");
+if (!historyCenter.includes("requestIdleCallback")) failures.push("History should defer hidden initial rendering when the browser is busy");
+if (!historyCenter.includes('gitee-studio-drawer-open')) failures.push("History should refresh on drawer lifecycle instead of continuously while hidden");
+if (!historyCenter.includes("listEl.replaceChildren(fragment)")) failures.push("History DOM updates should be batched through a DocumentFragment");
+if (historyCenter.includes("__giteeHistorySearchTimer")) failures.push("History search debounce state should stay module-scoped instead of leaking onto window");
 
 const taskTracker = fs.readFileSync(path.join(root, "js/runtime/task-tracker.js"), "utf8");
 if (!taskTracker.includes("if (!run || run.finishedAt) return;")) failures.push("Task tracker must ignore updates after terminal state");
