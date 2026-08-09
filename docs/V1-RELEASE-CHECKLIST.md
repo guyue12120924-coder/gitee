@@ -16,6 +16,7 @@ RC 回滚分支：`release/v1.0.0-rc.1`
 - [x] `docs/V1-RC1-REGRESSION-REPORT.md` 已记录代码级回归和外部验证边界。
 - [x] `docs/RELEASE-NODE.md` 已记录 Runtime/UI freeze commit、RC metadata commit 与回滚分支。
 - [x] `release/v1.0.0-rc.1` 已创建，作为完整 RC 树回滚点。
+- [x] GitHub Actions `Static Check` 已通过临时非合并 PR 实际执行；run `#93` 的 `Run static audit` 步骤为 `success`。
 - [x] 正式版升级条件保持显式，不会在未完成外部验证时提前改写为 `1.0.0`。
 
 ## 自动 / 代码级检查
