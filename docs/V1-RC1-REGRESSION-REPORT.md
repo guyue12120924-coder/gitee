@@ -85,6 +85,6 @@ The repository/CI must not contain or store the user's API credential.
 
 ## Release decision
 
-`1.0.0-rc.1` is the completed repository-side release candidate. The immutable rollback branch is `release/v1.0.0-rc.1`.
+`1.0.0-rc.1` is the completed repository-side release candidate. The dedicated rollback branch is `release/v1.0.0-rc.1`.
 
 Do not relabel it as `1.0.0` until the browser/device and credential-dependent checks above are confirmed. This keeps the published version claim aligned with the actual validation evidence.
