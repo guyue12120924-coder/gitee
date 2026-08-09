@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
   <title>Image View · Gitee AI 多模型工作台</title>
   <link rel="stylesheet" href="./styles.css" />
   <link rel="stylesheet" href="./workspace.css" />
@@ -47,7 +48,7 @@
       <div class="donate-eyebrow">Support this project</div>
       <h3 id="donateTitle">Buy me a coffee</h3>
       <p class="donate-text">如果真的帮助到了你，请为我打赏一杯咖啡吧。联系方式：admin@airymoon.com。项目开源地址：https://github.com/MallocPointer/gitee/</p>
-      <img class="donate-image" src="./image.png" alt="项目赞助收款码" />
+      <img class="donate-image" src="./image.png" alt="项目赞助收款码" loading="lazy" decoding="async" fetchpriority="low" />
       <a class="btn primary donate-download" href="./image.png" target="_blank" rel="noopener">打开收款码</a>
     </div>
   </div>
@@ -60,7 +61,7 @@
     <section class="card">
       <h2>1. 输入 API Key / Enter API Key</h2>
       <div class="row">
-        <input id="apiKey" class="input" placeholder="Bearer Token" />
+        <input id="apiKey" class="input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Bearer Token" />
         <label class="chk"><input type="checkbox" id="rememberKey" /> 记住（localStorage）</label>
         <button class="btn" id="btnClearKey">清除</button>
       </div>
