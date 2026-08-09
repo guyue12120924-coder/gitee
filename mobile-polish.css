@@ -348,3 +348,411 @@
   .studio-inspector-mask,
   .workspace-inspector { transition: none !important; }
 }
+
+/* ========================================================================== */
+/* Image View Studio · Commercial UI V2 / Phase 1                            */
+/* Premium visual foundation + top bar + workflow navigation                  */
+/* ========================================================================== */
+
+:root {
+  --bg: #090a0f;
+  --card: #11131a;
+  --muted: #9298a8;
+  --text: #f7f7fb;
+  --line: rgba(255,255,255,.075);
+  --accent: #7c5cff;
+  --accent2: #9b73ff;
+  --danger: #ff5d77;
+  --input-bg: #0d0f15;
+  --header-bg: rgba(9,10,15,.86);
+  --footer-bg: rgba(9,10,15,.9);
+  --border-light: rgba(255,255,255,.075);
+  --btn-bg: rgba(255,255,255,.045);
+  --btn-hover-bg: rgba(255,255,255,.075);
+  --modal-bg: #11131a;
+  --studio-soft: rgba(255,255,255,.035);
+  --v2-panel: rgba(17,19,26,.92);
+  --v2-panel-soft: rgba(255,255,255,.035);
+  --v2-border: rgba(255,255,255,.075);
+  --v2-border-strong: rgba(255,255,255,.12);
+  --v2-text-soft: #a1a6b5;
+  --v2-accent-soft: rgba(124,92,255,.12);
+  --v2-accent-border: rgba(141,108,255,.42);
+  --v2-shadow: 0 18px 48px rgba(0,0,0,.22);
+}
+
+body {
+  background:
+    radial-gradient(900px 520px at 42% -15%, rgba(99,77,220,.10), transparent 62%),
+    radial-gradient(780px 500px at 100% 20%, rgba(67,103,230,.06), transparent 65%),
+    #090a0f !important;
+  color: var(--text);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Top bar: calmer, thinner and product-like. */
+.studio-topbar {
+  min-height: 64px;
+  border-bottom: 1px solid var(--v2-border) !important;
+  background: rgba(9,10,15,.82) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(24px) saturate(125%) !important;
+}
+.studio-topbar .topbar-main {
+  position: relative;
+  min-height: 64px !important;
+  padding: 0 22px !important;
+}
+.studio-topbar .topbar-left { gap: 11px !important; }
+.studio-topbar .brand-mark {
+  position: relative;
+  width: 35px !important;
+  height: 35px !important;
+  overflow: hidden;
+  border: 1px solid rgba(167,132,255,.38);
+  border-radius: 11px !important;
+  background:
+    radial-gradient(circle at 32% 25%, rgba(255,255,255,.72), transparent 8%),
+    radial-gradient(circle at 67% 67%, rgba(77,190,255,.48), transparent 28%),
+    linear-gradient(145deg, #6f4cff 0%, #8e65ff 52%, #4d8dff 100%) !important;
+  box-shadow: 0 8px 24px rgba(90,64,220,.25) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+.studio-topbar .brand-mark::before,
+.studio-topbar .brand-mark::after {
+  content: "";
+  position: absolute;
+  background: rgba(255,255,255,.92);
+  transform: rotate(-12deg);
+}
+.studio-topbar .brand-mark::before {
+  width: 17px;
+  height: 2px;
+  left: 9px;
+  top: 17px;
+  border-radius: 999px;
+  box-shadow: 0 -6px 0 rgba(255,255,255,.62), 0 6px 0 rgba(255,255,255,.42);
+}
+.studio-topbar .brand-mark::after {
+  width: 3px;
+  height: 23px;
+  left: 15px;
+  top: 6px;
+  border-radius: 999px;
+  opacity: .88;
+}
+.studio-topbar .h1 {
+  min-width: 166px;
+  font-size: 0 !important;
+  color: var(--text) !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+.studio-topbar .h1::after {
+  content: "Image View Studio";
+  font-size: 15px;
+  font-weight: 760;
+  letter-spacing: -.02em;
+  color: #f7f7fb;
+}
+.studio-topbar .topbar-main::before {
+  content: "未命名项目\A  •  已自动保存";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220px;
+  transform: translate(-50%,-50%);
+  color: #f0f1f7;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+  text-align: center;
+  white-space: pre;
+  pointer-events: none;
+}
+.studio-topbar .topbar-main::after {
+  content: "";
+  position: absolute;
+  left: calc(50% + 10px);
+  top: 41px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #52d7a2;
+  box-shadow: 0 0 0 4px rgba(82,215,162,.06);
+  pointer-events: none;
+}
+.studio-topbar .topbar-right { gap: 6px !important; }
+.studio-topbar .top-icon-btn {
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 10px !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  color: var(--v2-text-soft) !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 620 !important;
+  transform: none !important;
+  backdrop-filter: none !important;
+}
+.studio-topbar .top-icon-btn:hover,
+.studio-topbar .top-icon-btn.is-active {
+  border-color: var(--v2-border) !important;
+  background: rgba(255,255,255,.045) !important;
+  color: #f5f5fa !important;
+  box-shadow: none !important;
+}
+.studio-topbar .top-icon-btn[href*="github.com"],
+.studio-topbar #donateBtn,
+.studio-topbar #themeToggleBtn { display: none !important; }
+.studio-topbar .status { display: none !important; }
+
+/* Refine all primary studio surfaces without changing behavior. */
+.container.workspace-ready {
+  width: min(100%, 1920px) !important;
+  padding: 14px 16px 28px !important;
+}
+.workspace-output-card,
+.workspace-inspector,
+.workspace-composer,
+.studio-drawer {
+  border-color: var(--v2-border) !important;
+  background: var(--v2-panel) !important;
+}
+.workspace-output-card,
+.workspace-inspector {
+  box-shadow: 0 14px 42px rgba(0,0,0,.16) !important;
+}
+.workspace-output-card { border-radius: 19px !important; }
+.workspace-inspector { border-radius: 19px !important; }
+
+/* Desktop workflow rail: readable, generous and premium. */
+@media (min-width: 901px) {
+  .workspace-shell {
+    grid-template-columns: 132px minmax(0,1fr) minmax(300px,324px) !important;
+    gap: 12px !important;
+    grid-template-rows: minmax(620px, calc(100vh - 178px)) auto !important;
+  }
+  .workspace-rail {
+    top: 78px !important;
+    width: 132px;
+    height: calc(100vh - 96px) !important;
+    padding: 12px 9px !important;
+    border: 1px solid var(--v2-border) !important;
+    border-radius: 19px !important;
+    background: rgba(15,17,23,.90) !important;
+    box-shadow: 0 14px 42px rgba(0,0,0,.14) !important;
+    backdrop-filter: blur(18px) saturate(120%);
+  }
+  .workspace-rail-workflows,
+  .workspace-rail-utility { gap: 7px !important; }
+  .workspace-rail-button {
+    position: relative;
+    display: grid !important;
+    grid-template-columns: 34px minmax(0,1fr) !important;
+    min-height: 58px !important;
+    place-items: center start !important;
+    gap: 9px !important;
+    padding: 9px 10px !important;
+    border: 1px solid transparent !important;
+    border-radius: 13px !important;
+    background: transparent !important;
+    color: #868c9d !important;
+    text-align: left;
+    transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease !important;
+  }
+  .workspace-rail-button::after {
+    content: "";
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    width: 2px;
+    height: 22px;
+    border-radius: 999px;
+    background: transparent;
+    transform: translateY(-50%);
+  }
+  .workspace-rail-button:hover {
+    border-color: rgba(255,255,255,.06) !important;
+    background: rgba(255,255,255,.035) !important;
+    color: #d8dae4 !important;
+  }
+  .workspace-rail-button.is-active {
+    border-color: rgba(137,102,255,.32) !important;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(152,114,255,.16), transparent 45%),
+      rgba(124,92,255,.10) !important;
+    color: #f6f4ff !important;
+    box-shadow: inset 0 0 0 1px rgba(174,145,255,.04), 0 10px 25px rgba(49,28,116,.12) !important;
+  }
+  .workspace-rail-button.is-active::after { background: linear-gradient(#7351ff,#9d75ff); }
+  .workspace-rail-icon {
+    display: grid !important;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(255,255,255,.035);
+    color: currentColor;
+    font-size: 17px !important;
+  }
+  .workspace-rail-button.is-active .workspace-rail-icon {
+    background: rgba(124,92,255,.16);
+    color: #bba7ff;
+    box-shadow: 0 0 22px rgba(120,83,255,.12);
+  }
+  .workspace-rail-icon svg { width: 18px !important; height: 18px !important; }
+  .workspace-rail-label {
+    display: block;
+    font-size: 12px !important;
+    font-weight: 680 !important;
+    letter-spacing: -.01em;
+  }
+  .workspace-rail-utility {
+    margin-top: 14px !important;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,.055);
+  }
+  .workspace-rail-utility .workspace-rail-button { min-height: 50px !important; }
+}
+
+/* Subtle premium component language. */
+.workspace-preview-summary {
+  min-height: 48px !important;
+  padding: 0 4px 11px !important;
+  border-bottom-color: rgba(255,255,255,.06) !important;
+}
+.workspace-preview-title > span {
+  color: #f4f4f8 !important;
+  font-size: 15px !important;
+  font-weight: 720 !important;
+}
+.workspace-preview-title > strong {
+  color: #8d93a3 !important;
+  font-size: 11px !important;
+  font-weight: 560 !important;
+}
+.workspace-preview-action {
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  color: #8f95a5 !important;
+}
+.workspace-preview-action:hover {
+  border-color: rgba(255,255,255,.07) !important;
+  background: rgba(255,255,255,.04) !important;
+  color: #f3f3f7 !important;
+}
+.workspace-inspector-head {
+  min-height: 62px !important;
+  padding: 12px 15px !important;
+  border-bottom-color: rgba(255,255,255,.06) !important;
+}
+.workspace-inspector-head span {
+  color: #777e90 !important;
+  font-size: 10px !important;
+  letter-spacing: .06em !important;
+}
+.workspace-inspector-head strong {
+  color: #f5f5fa !important;
+  font-size: 14px !important;
+  font-weight: 720 !important;
+}
+.workspace-inspector-host { padding: 12px !important; }
+.workspace-inspector .mm-model-box,
+.workspace-inspector .mp-panel {
+  padding: 12px !important;
+  border-color: rgba(255,255,255,.065) !important;
+  border-radius: 13px !important;
+  background: rgba(255,255,255,.025) !important;
+  box-shadow: none !important;
+}
+
+.input,
+.textarea,
+select,
+.mp-control {
+  border-color: rgba(255,255,255,.08) !important;
+  background: rgba(6,7,11,.46) !important;
+  box-shadow: none !important;
+}
+.input:focus,
+.textarea:focus,
+select:focus,
+.mp-control:focus {
+  border-color: rgba(139,103,255,.62) !important;
+  box-shadow: 0 0 0 3px rgba(124,92,255,.10) !important;
+}
+.btn.primary,
+.workspace-generate-button {
+  border: 1px solid rgba(180,153,255,.26) !important;
+  background: linear-gradient(135deg,#684cff 0%,#8c5fff 55%,#a66bf6 100%) !important;
+  color: white !important;
+  box-shadow: 0 10px 26px rgba(94,55,224,.24) !important;
+}
+.btn.primary:hover,
+.workspace-generate-button:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 13px 32px rgba(104,65,236,.30) !important;
+}
+
+/* Composer gets the glass treatment used in the approved concept. */
+.workspace-composer {
+  padding: 10px !important;
+  border: 1px solid rgba(132,98,255,.22) !important;
+  border-radius: 17px !important;
+  background: rgba(15,17,24,.88) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,.24), 0 0 0 1px rgba(124,92,255,.025) !important;
+  backdrop-filter: blur(24px) saturate(120%) !important;
+}
+.workspace-composer:focus-within {
+  border-color: rgba(139,103,255,.48) !important;
+  box-shadow: 0 18px 52px rgba(0,0,0,.28), 0 0 0 3px rgba(124,92,255,.055) !important;
+}
+.workspace-composer-input {
+  min-height: 70px !important;
+  padding: 12px 13px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: rgba(5,6,10,.34) !important;
+  color: #f7f7fb !important;
+  font-size: 13px !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.055) !important;
+}
+.workspace-composer-input::placeholder { color: #717788 !important; }
+
+/* Drawers inherit the same visual system. */
+.studio-drawer-mask { background: rgba(2,3,7,.56) !important; backdrop-filter: blur(4px) !important; }
+.studio-drawer {
+  background: rgba(15,17,23,.97) !important;
+  border-left-color: rgba(255,255,255,.075) !important;
+  box-shadow: -24px 0 70px rgba(0,0,0,.35) !important;
+}
+.studio-drawer-head { border-bottom-color: rgba(255,255,255,.065) !important; }
+
+/* Mobile keeps the original interaction model, with the new visual language only. */
+@media (max-width: 900px) {
+  .studio-topbar .topbar-main::before,
+  .studio-topbar .topbar-main::after { display: none !important; }
+  .studio-topbar .h1 { max-width: 45vw !important; }
+  .studio-topbar .h1::after { font-size: 13px !important; }
+  .workspace-rail {
+    background: rgba(15,17,23,.92) !important;
+    border-color: rgba(255,255,255,.07) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.12) !important;
+  }
+  .workspace-rail-button.is-active {
+    border-color: rgba(137,102,255,.30) !important;
+    background: rgba(124,92,255,.10) !important;
+    color: #f4f1ff !important;
+  }
+  .workspace-rail-icon { color: currentColor; }
+  .workspace-output-card,
+  .workspace-inspector,
+  .workspace-composer { background: rgba(15,17,23,.94) !important; }
+  .workspace-inspector { border-color: rgba(255,255,255,.08) !important; }
+  .workspace-composer-input { min-height: 48px !important; }
+}
