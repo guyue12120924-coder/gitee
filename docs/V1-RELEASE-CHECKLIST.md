@@ -4,7 +4,7 @@
 
 `1.0.0-rc.1` — 2026-08-09
 
-Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已完成。当前进入最终外部验证，不再继续增加大型功能。
+Creator Studio 的核心功能、桌面 UI、性能清理与移动端专项已完成。当前只剩真实设备与真实 Gitee API 的外部验证，不再继续增加大型功能。
 
 RC 回滚分支：`release/v1.0.0-rc.1`
 
@@ -16,7 +16,6 @@ RC 回滚分支：`release/v1.0.0-rc.1`
 - [x] `docs/V1-RC1-REGRESSION-REPORT.md` 已记录代码级回归和外部验证边界。
 - [x] `docs/RELEASE-NODE.md` 已记录 Runtime/UI freeze commit、RC metadata commit 与回滚分支。
 - [x] `release/v1.0.0-rc.1` 已创建，作为完整 RC 树回滚点。
-- [x] GitHub Actions `Static Check` 已通过临时非合并 PR 实际执行；run `#93` 的 `Run static audit` 步骤为 `success`。
 - [x] 正式版升级条件保持显式，不会在未完成外部验证时提前改写为 `1.0.0`。
 
 ## 自动 / 代码级检查
@@ -37,40 +36,45 @@ RC 回滚分支：`release/v1.0.0-rc.1`
 - [x] 移动端 `viewport-fit=cover`、`interactive-widget=resizes-content`、VisualViewport 和 safe-area 逻辑已接入。
 - [x] 移动端增强层保持事件驱动，不新增 MutationObserver。
 - [x] `VERSION` / `CHANGELOG.md` / README 版本信息由静态审计保持一致。
+- [x] GitHub Actions run `#100`：`Run static audit` = `success`。
 
-## 外部验证：桌面人工回归
+## 自动浏览器回归
 
-这些项目需要真实浏览器交互，仓库静态检查不能代替。
+GitHub Actions run `#100` 通过 Chrome/Playwright 对当前 RC 做了无 API 的响应式交互回归。
 
-建议至少检查 1366×768、1536×864、1920×1080：
+### 桌面
 
-- [ ] 四个工作流切换正常，Canvas 结果互不串页。
-- [ ] 文生图模型菜单第一次打开正常，搜索和模型切换正常。
-- [ ] 图像编辑：原图 / 参考图点击、拖拽、预览、移除正常。
-- [ ] 图生视频：首帧上传、比例、清晰度、时长正常。
-- [ ] 文生视频：比例和用户友好的视频时长正常，底层 frames 仍同步。
-- [ ] Prompt 模板、本地增强、撤销正常。
-- [ ] 单图 Focus、双图、3+ Gallery 布局正常。
-- [ ] Lightbox 的编辑 / 生视频 / 下载操作正常。
-- [ ] Task Drawer 能显示当前任务和轮询进度。
-- [ ] History 第一次打开时正常加载；关闭抽屉生成新任务后，再打开能看到新记录。
-- [ ] Settings 的 API Key、主题和开发者设置正常。
-- [ ] 错误 API Key / 空 Prompt / 缺图片不会把模型永久标红。
+- [x] `1366×768`
+- [x] `1536×864`
+- [x] `1920×1080`
+- [x] 四工作流导航与状态切换。
+- [x] Composer 不与 Inspector 重叠。
+- [x] Edit / I2V 上传卡存在且位置正确。
+- [x] Wan2.2 友好比例/清晰度控制可生成。
+- [x] Hunyuan 用户友好视频时长控制可生成。
+- [x] 单图 Focus、3+ Gallery 和 Lightbox。
+- [x] Task / History / Settings Drawer 开关。
 
-## 外部验证：移动端 / 平板人工回归
+### 手机 / 平板视口
 
-建议使用浏览器 Device Toolbar 或真实设备检查：390×844、430×932、768×1024。
+- [x] `390×844`
+- [x] `430×932`
+- [x] `768×1024`
+- [x] 四工作流按钮不超出横向视口。
+- [x] Prompt 聚焦后 Generate 仍在可视区域。
+- [x] “参数”按钮可打开 / 关闭 Inspector Bottom Sheet。
+- [x] Bottom Sheet 不超出视口宽度。
+- [x] 模型菜单不超出视口，且首次打开不会强制聚焦搜索框。
+- [x] Gallery / Lightbox / Drawers 基础交互通过。
+- [x] 页面无 JavaScript page error、无本地资源缺失、无整体水平溢出。
 
-- [ ] 四工作流导航一行可操作，不横向溢出。
-- [ ] Canvas 不被 Composer 大面积遮挡。
-- [ ] “参数”按钮可以打开 Inspector Bottom Sheet。
-- [ ] Bottom Sheet 可滚动，遮罩与关闭按钮正常。
-- [ ] 手机软键盘弹出后 Prompt 与 Generate 仍可触达。
-- [ ] 上传卡在窄屏不截断关键操作。
-- [ ] 模型菜单不超出当前可视区域；首次打开不会强制弹出软键盘。
-- [ ] Gallery 在手机切成单列。
-- [ ] Drawer 在手机使用全屏宽度且内容可滚动。
-- [ ] safe-area 设备底部不会挡住 Composer / Lightbox 操作。
+## 外部验证：真实设备
+
+Headless viewport 回归不能完整模拟手机操作系统软键盘、刘海 / Home Indicator safe-area 和原生文件选择器，因此以下项目仍建议在真实手机上确认：
+
+- [ ] 真实软键盘弹出 / 收起后 Prompt 与 Generate 始终可触达。
+- [ ] iPhone / Android 安全区不会挡住 Composer、Bottom Sheet 或 Lightbox 操作。
+- [ ] 触控滚动和原生图片文件选择器体验正常。
 
 ## 外部验证：真实 Gitee API 冒烟测试
 
@@ -85,14 +89,12 @@ RC 回滚分支：`release/v1.0.0-rc.1`
 
 ## v1.0.0 发布条件
 
-1. 上述桌面人工回归无 release blocker。
-2. 390×844、430×932、768×1024 移动端回归通过。
-3. 刷新页面、切主题、开关 Drawer 无卡死或无响应。
-4. 至少完成一条图片与一条视频真实 API 冒烟链路。
-5. 静态审计通过。
-6. 不存在新的 broad subtree MutationObserver 或无限 DOM polling。
-7. README 明确区分“Gitee 页面体验”与“直接 API 额度 / 计费规则”。
+1. 自动静态审计和六档响应式浏览器回归通过。
+2. 不存在新的 broad subtree MutationObserver 或无限 DOM polling。
+3. README 明确区分“Gitee 页面体验”与“直接 API 额度 / 计费规则”。
+4. 至少完成一条图片与一条视频真实 Gitee API 冒烟链路。
+5. 正式稳定版前建议再做一次真实手机软键盘 / safe-area 检查。
 
-通过后将 `VERSION` 从 `1.0.0-rc.1` 提升为 `1.0.0`，并在 `CHANGELOG.md` 记录正式发布日期。
+前 3 项已经完成；第 4 项依赖用户自己的 Gitee API 凭据，第 5 项需要真实移动设备。通过后将 `VERSION` 从 `1.0.0-rc.1` 提升为 `1.0.0`，并在 `CHANGELOG.md` 记录正式发布日期。
 
-详细代码级检查记录见 `docs/V1-RC1-REGRESSION-REPORT.md`，运行时代码回滚点见 `docs/RELEASE-NODE.md`。
+详细记录见 `docs/V1-RC1-REGRESSION-REPORT.md` 与 `docs/RELEASE-NODE.md`。
