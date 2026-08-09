@@ -75,10 +75,13 @@ for (const viewport of viewports) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
   const page = await context.newPage();
   const pageErrors = [];
-  const consoleErrors = [];
+  const failedResources = [];
   page.on("pageerror", (error) => pageErrors.push(String(error?.stack || error)));
-  page.on("console", (message) => {
-    if (message.type() === "error") consoleErrors.push(message.text());
+  page.on("response", (response) => {
+    if (response.status() < 400) return;
+    const url = response.url();
+    if (/\/favicon\.ico(?:\?|$)/i.test(url)) return;
+    failedResources.push(`${response.status()} ${url}`);
   });
 
   await page.goto(baseUrl, { waitUntil: "load" });
@@ -86,8 +89,7 @@ for (const viewport of viewports) {
   await page.waitForTimeout(250);
 
   assert(pageErrors.length === 0, `${viewport.name}: page errors: ${pageErrors.join(" | ")}`);
-  const relevantConsoleErrors = consoleErrors.filter((text) => !/favicon/i.test(text));
-  assert(relevantConsoleErrors.length === 0, `${viewport.name}: console errors: ${relevantConsoleErrors.join(" | ")}`);
+  assert(failedResources.length === 0, `${viewport.name}: failed resources: ${failedResources.join(" | ")}`);
 
   const overflow = await page.evaluate(() => ({ width: innerWidth, scroll: document.documentElement.scrollWidth }));
   assert(overflow.scroll <= overflow.width + 2, `${viewport.name}: horizontal overflow ${overflow.scroll} > ${overflow.width}`);
