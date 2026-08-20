@@ -155,7 +155,10 @@ if (!workflowUi.includes('studio-gallery-one') || !workflowUi.includes('studio-g
 if (!workflowUi.includes('new MutationObserver') || !workflowUi.includes('observe(output, { childList: true })')) failures.push("Output view observer must stay child-list-only to avoid feedback loops");
 if (workflowUi.includes('observe($("workspaceInspectorHost")') || workflowUi.includes('observe(document.body, { childList: true, subtree: true })')) failures.push("Workflow polish must not add broad subtree observers");
 
-const mobileCss = fs.readFileSync(path.join(root, "mobile-polish.css"), "utf8");
+const mobileCssEntry = fs.readFileSync(path.join(root, "mobile-polish.css"), "utf8");
+const mobileCssBasePath = path.join(root, "mobile-polish-base.css");
+if (!fs.existsSync(mobileCssBasePath)) failures.push("Mobile polish base stylesheet is missing");
+const mobileCss = `${mobileCssEntry}\n${fs.existsSync(mobileCssBasePath) ? fs.readFileSync(mobileCssBasePath, "utf8") : ""}`;
 for (const marker of ["--studio-mobile-vh", ".studio-inspector-mask", ".studio-keyboard-open", "env(safe-area-inset-bottom)", "@media (max-width: 430px)"]) {
   if (!mobileCss.includes(marker)) failures.push(`Mobile polish CSS marker missing: ${marker}`);
 }
