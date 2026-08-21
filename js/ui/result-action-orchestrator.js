@@ -44,12 +44,15 @@
   function setRole(action, role) {
     if (!action || !role) return;
     action.dataset.resultActionRole = role;
+    action.dataset.smartLabel = PRIMARY_LABEL[role] || "作品操作";
     action.classList.add("smart-result-action");
     action.classList.remove("smart-action-primary", "smart-action-secondary", "smart-action-utility", "smart-utility-start");
 
-    if (role === "edit") action.textContent = PRIMARY_LABEL.edit;
-    else if (role === "video") action.textContent = PRIMARY_LABEL.video;
-    else if (role === "rerun") action.textContent = PRIMARY_LABEL.rerun;
+    // Keep the original “编辑” text in the DOM so the lineage module can still
+    // recognize the action. CSS presents it to users as “继续编辑”.
+    if (["video", "rerun"].includes(role) && action.textContent?.trim() !== PRIMARY_LABEL[role]) {
+      action.textContent = PRIMARY_LABEL[role];
+    }
 
     action.title = ROLE_TITLE[role] || action.title || "作品操作";
     action.setAttribute("aria-label", ROLE_TITLE[role] || PRIMARY_LABEL[role] || "作品操作");
@@ -122,7 +125,8 @@
       if (media) media.insertAdjacentElement("afterend", hint);
     }
     if (!hint) return;
-    hint.textContent = kind === "video" ? "继续创作：再次生成或保存作品" : "继续创作：编辑图片、生成视频或再次生成";
+    const message = kind === "video" ? "继续创作：再次生成或保存作品" : "继续创作：编辑图片、生成视频或再次生成";
+    if (hint.textContent !== message) hint.textContent = message;
   }
 
   function syncFavoriteState(actionsEl) {
@@ -166,7 +170,7 @@
     if (!item || item.dataset.smartResultObserved === "1") return;
     item.dataset.smartResultObserved = "1";
     const observer = new MutationObserver(() => scheduleCard(item));
-    observer.observe(item, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    observer.observe(item, { childList: true, subtree: true });
     scheduleCard(item);
   }
 
@@ -220,7 +224,9 @@
       .smart-result-actions [data-result-action-role="project"]::before{content:"◇"}
       .smart-result-actions [data-result-action-role="download"]::before{content:"↓";font-size:17px}
       .smart-result-actions .smart-utility-start{margin-inline-start:auto!important}
+      .smart-result-actions [data-result-action-role="edit"]{font-size:0!important}
       .smart-result-actions [data-result-action-role="edit"]::before{content:"✎";margin-right:5px;font-size:13px}
+      .smart-result-actions [data-result-action-role="edit"]::after{content:attr(data-smart-label);font-size:10px;line-height:1}
       .smart-result-actions [data-result-action-role="video"]::before{content:"▶";margin-right:5px;font-size:10px}
       .smart-result-actions [data-result-action-role="rerun"]::before{content:"↻";margin-right:5px;font-size:14px}
       .studio-lightbox-actions{max-width:calc(100vw - 24px);flex-wrap:wrap;justify-content:center}
