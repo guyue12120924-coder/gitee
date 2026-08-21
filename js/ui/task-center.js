@@ -71,9 +71,17 @@
     if (/401|unauthorized|invalid token|api key|authentication/.test(text)) return "API Key 无效或认证失败。请检查 Token 是否正确、是否过期。";
     if (/403|forbidden|permission|无权限/.test(text)) return "当前 Token 没有调用该模型或接口的权限。";
     if (/429|rate limit|too many|quota|余额|额度|balance/.test(text)) return "可能触发频率限制、体验额度或账户额度限制。稍后重试并检查 Gitee 账户状态。";
+    if (/error code:\s*520|http\s*520|\b520\b/.test(text)) return "上游模型服务或边缘节点返回 HTTP 520。它不是 API Key 或“输入图片字段”错误；通常是模型服务临时异常。若只在特定 Prompt 上出现，也可能是上游策略或该模型处理该请求失败。";
+    if (/failed to fetch/.test(text)) {
+      const accepted = Array.isArray(run.attempts) && run.attempts.some((attempt) => attempt?.ok);
+      return accepted
+        ? "生成接口已经成功返回，但浏览器在获取结果图片/视频时失败。生成本身不一定失败，请查看原始响应中的结果 URL。"
+        : "浏览器与本站代理或上游服务的网络连接失败。请稍后重试并检查网络状态。";
+    }
+    if (/\b5\d\d\b|internal server error|upstream|server error/.test(text)) return "上游模型服务返回服务端错误。请求已经到达接口，但服务端没有正常完成处理；这通常不是本地参数面板或 API Key 导致的。";
     if (/duration|时长/.test(text)) return "视频时长参数不符合当前模型要求。页面已做范围校正；若仍失败，请查看原始响应中的精确范围。";
     if (/size|resolution|width|height|分辨率|尺寸/.test(text)) return "尺寸或分辨率参数与模型要求不兼容。建议先使用推荐分辨率再试。";
-    if (/image|first_frame|image_url|图片|图像/.test(text)) return "输入图片字段、格式或图片内容可能不符合接口要求。";
+    if (["edit", "i2v"].includes(run.task) && /image|first_frame|image_url|图片|图像/.test(text)) return "输入图片字段、格式或图片内容可能不符合接口要求。";
     if (/404|405|endpoint|method|not found/.test(text)) return "当前 Endpoint 或请求方式可能与这个模型不匹配。";
     if (/400|422|parameter|invalid|unsupported|field|参数/.test(text)) return "模型拒绝了某个请求参数。展开“请求尝试”可查看哪个 Endpoint/格式失败。";
     if (/timeout|超时/.test(text)) return "本地等待超时。远端任务不一定失败，可以保留 task_id 稍后查询。";
