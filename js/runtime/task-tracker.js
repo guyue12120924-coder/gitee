@@ -24,6 +24,12 @@
     i2v: "wanPrompt",
     t2v: "hyPrompt",
   };
+  const OUTPUT_TASK_PATTERNS = {
+    t2i: /文生图|text[-\s]?to[-\s]?image/i,
+    edit: /图像编辑|image\s*edit/i,
+    i2v: /图生视频|image[-\s]?to[-\s]?video/i,
+    t2v: /文生视频|text[-\s]?to[-\s]?video/i,
+  };
 
   const $ = (id) => document.getElementById(id);
   const now = () => Date.now();
@@ -375,7 +381,7 @@
       if (!response.ok) {
         run.lastRaw = compactValue(raw);
         run.lastError = attempt.message || `HTTP ${response.status}`;
-        update(run, "retrying", "接口参数不兼容，准备重试", `${endpoint} 返回 HTTP ${response.status}${attempt.message ? ` · ${attempt.message}` : ""}`, { lastRaw: raw });
+        update(run, "retrying", "接口返回错误", `${endpoint} 返回 HTTP ${response.status}${attempt.message ? ` · ${attempt.message}` : ""}`, { lastRaw: raw });
         emit("attempt", run, attempt);
         return response;
       }
@@ -396,8 +402,20 @@
     return nativeFetch(input, init);
   };
 
-  function inspectOutput(before) {
-    const items = [...document.querySelectorAll("#output .item")].filter((item) => !before.has(item));
+  function outputBelongsToRun(item, run) {
+    const title = item?.querySelector("h3")?.textContent || "";
+    const meta = item?.querySelector(".meta")?.textContent || "";
+    const text = `${title} ${meta}`;
+    const taskPattern = OUTPUT_TASK_PATTERNS[run?.task];
+    if (taskPattern?.test(text)) return true;
+    const modelId = String(run?.modelId || "").trim().toLowerCase();
+    return Boolean(modelId && text.toLowerCase().includes(modelId));
+  }
+
+  function inspectOutput(before, run) {
+    const items = [...document.querySelectorAll("#output .item")]
+      .filter((item) => !before.has(item))
+      .filter((item) => outputBelongsToRun(item, run));
     const error = items.find((item) => /错误|失败|error|failed/i.test(item.querySelector("h3")?.textContent || ""));
     const media = items.find((item) => item.querySelector("img,video"));
     if (error) return { state: "failed", message: error.querySelector(".meta")?.textContent || error.textContent.slice(0, 500) };
@@ -416,7 +434,7 @@
       try {
         await original.call(this, event);
         if (run.finishedAt) return;
-        const result = inspectOutput(before);
+        const result = inspectOutput(before, run);
         if (result.state === "success") success(run, result.message);
         else if (result.state === "failed") fail(run, result.message, run.lastRaw);
         else if (run.stage === "server-failed") fail(run, run.lastError || "服务端任务失败", run.lastRaw);
