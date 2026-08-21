@@ -13,17 +13,10 @@
     "4:3 (1024x768)", "16:9 (1024x576)", "9:16 (576x1024)"
   ];
   const QWEN_SIZES = [
-    "1:1 (1328x1328)", "16:9 (1664x928)", "9:16 (928x1664)",
-    "4:3 (1472x1104)", "3:4 (1104x1472)", "3:2 (1584x1056)", "2:3 (1056x1584)"
-  ];
-  const QWEN_BUCKETS = [
-    { ratio: 1, width: 1328, height: 1328 },
-    { ratio: 16 / 9, width: 1664, height: 928 },
-    { ratio: 9 / 16, width: 928, height: 1664 },
-    { ratio: 4 / 3, width: 1472, height: 1104 },
-    { ratio: 3 / 4, width: 1104, height: 1472 },
-    { ratio: 3 / 2, width: 1584, height: 1056 },
-    { ratio: 2 / 3, width: 1056, height: 1584 }
+    "1:1 (1024x1024)", "3:4 (768x1024)", "4:3 (1024x768)",
+    "16:9 (1024x576)", "9:16 (576x1024)",
+    "原生 1:1 (1328x1328)", "原生 16:9 (1664x928)", "原生 9:16 (928x1664)",
+    "原生 4:3 (1472x1104)", "原生 3:4 (1104x1472)", "原生 3:2 (1584x1056)", "原生 2:3 (1056x1584)"
   ];
 
   function splitSize(size) {
@@ -39,30 +32,25 @@
       return true;
     });
   }
-  function nearestBucket(parsed) {
-    if (!parsed?.width || !parsed?.height) return QWEN_BUCKETS[0];
-    const ratio = parsed.width / parsed.height;
-    return QWEN_BUCKETS.reduce((best, item) => Math.abs(item.ratio - ratio) < Math.abs(best.ratio - ratio) ? item : best, QWEN_BUCKETS[0]);
-  }
 
   hub.register("qwen-image", {
     task: "t2i",
     defaultEndpoint: "images/generations",
     allowBatch: false,
-    ui: { sizes: QWEN_SIZES, note: "自动使用 Qwen 原生分辨率桶，并转换为 1328*1328 / 1664*928 等格式" },
+    ui: { sizes: QWEN_SIZES, note: "默认使用 1024 级兼容尺寸；Qwen 原生大尺寸保留为可选项，不再强制放大" },
     parameters: [
-      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: QWEN_SIZES, help: "Qwen 使用原生尺寸桶；实际请求会自动转换为模型接受的格式。" }
+      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: QWEN_SIZES, help: "优先使用托管 API 更稳定的 1024 级尺寸；需要时仍可手动选择 Qwen 原生尺寸。" }
     ],
     jsonVariants(body) {
-      const bucket = nearestBucket(splitSize(body.size));
-      const nativeSize = { ...body, size: `${bucket.width}*${bucket.height}` };
-      const noN = { ...nativeSize }; delete noN.n;
-      const widthHeight = { ...noN, width: bucket.width, height: bucket.height }; delete widthHeight.size;
+      const parsed = splitSize(body.size) || { width: 1024, height: 1024 };
+      const starSize = { ...body, size: `${parsed.width}*${parsed.height}` };
+      const noN = { ...starSize }; delete noN.n;
+      const widthHeight = { ...noN, width: parsed.width, height: parsed.height }; delete widthHeight.size;
       const defaultSize = { ...noN }; delete defaultSize.size;
-      // Qwen is single-image in this workbench. Some Gitee backends return a
-      // generic HTTP 500 instead of a 4xx when an unsupported `n` is present,
-      // so the safest single-image payload must be attempted first.
-      return unique([noN, widthHeight, defaultSize, nativeSize]);
+      // Qwen is single-image in this workbench. Some hosted backends return a
+      // generic HTTP 500 instead of a 4xx when `n` or a backend-specific size
+      // combination is rejected. Prefer the smallest compatible payload first.
+      return unique([noN, widthHeight, defaultSize, starSize]);
     }
   });
 
@@ -89,9 +77,9 @@
     jsonVariants(body) {
       const parsed = splitSize(body.size);
       const noN = { ...body }; delete noN.n;
-      // Generic image models are also treated as single-image by default.
-      // Prefer the minimal payload first so servers that reject `n` do not
-      // fail before the compatibility variants can be reached.
+      // Generic image models are treated as single-image by default. Prefer
+      // the minimal payload first so servers that reject `n` do not fail
+      // before the compatibility variants can be reached.
       const variants = [noN, { ...body }];
       if (parsed) {
         variants.push({ ...noN, size: `${parsed.width}*${parsed.height}` });
