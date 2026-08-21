@@ -4,6 +4,10 @@
   const hub = window.GiteeModelAdapters;
   if (!hub) throw new Error("GiteeModelAdapters is not initialized");
 
+  // Capture the browser fetch before model-runtime wraps it. This hotfix only
+  // handles Qwen text-to-image requests; every other request is passed through.
+  const rawFetch = window.fetch.bind(window);
+
   const COMMON_SIZES = [
     "1:1 (1024x1024)", "3:4 (768x1024)", "4:3 (1024x768)",
     "16:9 (1024x576)", "9:16 (576x1024)"
@@ -13,23 +17,26 @@
     "4:3 (1024x768)", "16:9 (1024x576)", "9:16 (576x1024)"
   ];
   const QWEN_SIZES = [
-    "1:1 (1328x1328)", "16:9 (1664x928)", "9:16 (928x1664)",
-    "4:3 (1472x1104)", "3:4 (1104x1472)", "3:2 (1584x1056)", "2:3 (1056x1584)"
+    "1:1 (1024x1024)", "3:4 (768x1024)", "4:3 (1024x768)",
+    "16:9 (1024x576)", "9:16 (576x1024)",
+    "原生 1:1 (1328x1328)", "原生 16:9 (1664x928)", "原生 9:16 (928x1664)",
+    "原生 4:3 (1472x1104)", "原生 3:4 (1104x1472)", "原生 3:2 (1584x1056)", "原生 2:3 (1056x1584)"
   ];
-  const QWEN_BUCKETS = [
-    { ratio: 1, width: 1328, height: 1328 },
-    { ratio: 16 / 9, width: 1664, height: 928 },
-    { ratio: 9 / 16, width: 928, height: 1664 },
-    { ratio: 4 / 3, width: 1472, height: 1104 },
-    { ratio: 3 / 4, width: 1104, height: 1472 },
-    { ratio: 3 / 2, width: 1584, height: 1056 },
-    { ratio: 2 / 3, width: 1056, height: 1584 }
+  const QWEN_SAFE_BUCKETS = [
+    { ratio: 1, width: 1024, height: 1024 },
+    { ratio: 16 / 9, width: 1024, height: 576 },
+    { ratio: 9 / 16, width: 576, height: 1024 },
+    { ratio: 4 / 3, width: 1024, height: 768 },
+    { ratio: 3 / 4, width: 768, height: 1024 },
+    { ratio: 3 / 2, width: 1024, height: 680 },
+    { ratio: 2 / 3, width: 680, height: 1024 }
   ];
 
   function splitSize(size) {
     const m = String(size || "").match(/(\d+)[x*](\d+)/i);
     return m ? { width: Number(m[1]), height: Number(m[2]) } : null;
   }
+
   function unique(items) {
     const seen = new Set();
     return items.filter((item) => {
@@ -39,27 +46,98 @@
       return true;
     });
   }
-  function nearestBucket(parsed) {
-    if (!parsed?.width || !parsed?.height) return QWEN_BUCKETS[0];
+
+  function nearestSafeQwenSize(parsed) {
+    if (!parsed?.width || !parsed?.height) return QWEN_SAFE_BUCKETS[0];
     const ratio = parsed.width / parsed.height;
-    return QWEN_BUCKETS.reduce((best, item) => Math.abs(item.ratio - ratio) < Math.abs(best.ratio - ratio) ? item : best, QWEN_BUCKETS[0]);
+    return QWEN_SAFE_BUCKETS.reduce(
+      (best, item) => Math.abs(item.ratio - ratio) < Math.abs(best.ratio - ratio) ? item : best,
+      QWEN_SAFE_BUCKETS[0]
+    );
   }
+
+  function qwenVariants(body) {
+    const selected = splitSize(body?.size);
+    const safe = nearestSafeQwenSize(selected);
+    const base = { ...body };
+    delete base.n;
+    delete base.size;
+    delete base.width;
+    delete base.height;
+
+    const variants = [
+      { ...base, size: `${safe.width}x${safe.height}` },
+      { ...base, size: `${safe.width}*${safe.height}` },
+      { ...base, width: safe.width, height: safe.height },
+      { ...base }
+    ];
+
+    // Keep the explicitly selected native size as a late fallback only.
+    if (selected && (selected.width !== safe.width || selected.height !== safe.height)) {
+      variants.push({ ...base, size: `${selected.width}*${selected.height}` });
+    }
+    return unique(variants);
+  }
+
+  function isQwenGenerationRequest(input, init) {
+    const url = typeof input === "string" ? input : String(input?.url || "");
+    if (!/\/api\/images\/generations(?:\?|$)/.test(url)) return null;
+    if (typeof init?.body !== "string") return null;
+    let body;
+    try { body = JSON.parse(init.body); } catch { return null; }
+    const model = String(body?.model || "").toLowerCase();
+    if (model !== "qwen-image-2512" && model !== "qwen-image") return null;
+    return body;
+  }
+
+  async function shouldRetryQwen(res) {
+    if (!res || res.ok) return false;
+    if ([400, 404, 405, 415, 422, 502, 503, 504].includes(res.status)) return true;
+    if (res.status !== 500) return false;
+    let text = "";
+    try { text = await res.clone().text(); } catch {}
+    return /unexpected error|server log|internal server error/i.test(text);
+  }
+
+  async function qwenCompatibleFetch(input, init = {}) {
+    const body = isQwenGenerationRequest(input, init);
+    if (!body) return rawFetch(input, init);
+
+    let last = null;
+    for (const variant of qwenVariants(body)) {
+      const res = await rawFetch(input, { ...init, body: JSON.stringify(variant) });
+      last = res;
+      if (res.ok || !(await shouldRetryQwen(res))) return res;
+    }
+    return last || rawFetch(input, init);
+  }
+
+  // model-runtime loads after this file and captures this wrapper as its native fetch.
+  // Therefore Qwen gets the targeted 500 fallback while all other models remain untouched.
+  window.fetch = qwenCompatibleFetch;
 
   hub.register("qwen-image", {
     task: "t2i",
     defaultEndpoint: "images/generations",
     allowBatch: false,
-    ui: { sizes: QWEN_SIZES, note: "自动使用 Qwen 原生分辨率桶，并转换为 1328*1328 / 1664*928 等格式" },
+    ui: {
+      sizes: QWEN_SIZES,
+      note: "Qwen 默认使用 1024 级兼容尺寸；单图请求不发送 n，若服务端返回通用 500 会自动尝试兼容格式"
+    },
     parameters: [
-      { key: "size", label: "分辨率 Resolution", type: "select", sourceId: "zRes", options: QWEN_SIZES, help: "Qwen 使用原生尺寸桶；实际请求会自动转换为模型接受的格式。" }
+      {
+        key: "size",
+        label: "分辨率 Resolution",
+        type: "select",
+        sourceId: "zRes",
+        options: QWEN_SIZES,
+        help: "建议先用 1024 级尺寸；原生 1328/1664 尺寸仍保留为手动选项。"
+      }
     ],
     jsonVariants(body) {
-      const bucket = nearestBucket(splitSize(body.size));
-      const nativeSize = { ...body, size: `${bucket.width}*${bucket.height}` };
-      const noN = { ...nativeSize }; delete noN.n;
-      const widthHeight = { ...noN, width: bucket.width, height: bucket.height }; delete widthHeight.size;
-      const defaultSize = { ...noN }; delete defaultSize.size;
-      return unique([nativeSize, noN, widthHeight, defaultSize]);
+      // The Qwen-only fetch wrapper owns compatibility retries, including the
+      // observed provider HTTP 500. Keep runtime-level variants to one safe body.
+      return [qwenVariants(body)[0]];
     }
   });
 
