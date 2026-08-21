@@ -59,7 +59,10 @@
       const noN = { ...nativeSize }; delete noN.n;
       const widthHeight = { ...noN, width: bucket.width, height: bucket.height }; delete widthHeight.size;
       const defaultSize = { ...noN }; delete defaultSize.size;
-      return unique([nativeSize, noN, widthHeight, defaultSize]);
+      // Qwen is single-image in this workbench. Some Gitee backends return a
+      // generic HTTP 500 instead of a 4xx when an unsupported `n` is present,
+      // so the safest single-image payload must be attempted first.
+      return unique([noN, widthHeight, defaultSize, nativeSize]);
     }
   });
 
@@ -86,7 +89,10 @@
     jsonVariants(body) {
       const parsed = splitSize(body.size);
       const noN = { ...body }; delete noN.n;
-      const variants = [{ ...body }, noN];
+      // Generic image models are also treated as single-image by default.
+      // Prefer the minimal payload first so servers that reject `n` do not
+      // fail before the compatibility variants can be reached.
+      const variants = [noN, { ...body }];
       if (parsed) {
         variants.push({ ...noN, size: `${parsed.width}*${parsed.height}` });
         const widthHeight = { ...noN, width: parsed.width, height: parsed.height }; delete widthHeight.size;
