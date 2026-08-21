@@ -73,6 +73,22 @@
     return { blob, url: URL.createObjectURL(blob) };
   }
 
+  async function resolveImageResult(url) {
+    const raw = String(url || "").trim();
+    if (!raw) throw new Error("图片结果 URL 为空");
+    if (/^data:image\//i.test(raw)) return { url: raw, downloadUrl: raw, via: "data" };
+    try {
+      const proxied = await fetchBlob(raw);
+      return { url: proxied.url, downloadUrl: proxied.url, via: "proxy" };
+    } catch (error) {
+      if (/^https:\/\//i.test(raw)) {
+        console.warn("result proxy download failed; falling back to direct image URL", error);
+        return { url: raw, downloadUrl: raw, via: "direct", warning: String(error?.message || error) };
+      }
+      throw error;
+    }
+  }
+
   async function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -238,11 +254,29 @@
     if (!items.length) throw new Error("API 返回成功，但没有发现图片数据");
     for (let i = 0; i < items.length; i++) {
       let objectUrl;
-      if (items[i].url) objectUrl = (await fetchBlob(items[i].url)).url;
-      else if (items[i].b64_json) { const bytes = Uint8Array.from(atob(items[i].b64_json), (c) => c.charCodeAt(0)); objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" })); }
-      else continue;
-      const img = document.createElement("img"); img.src = objectUrl;
-      addOutput({ title: `${model.label} · 文生图 #${i+1}`, meta: `实际模型=${model.id} · Adapter=${model.adapter || "custom"} · size=${body.size}`, element: img, download: { href: objectUrl, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}-${i+1}.png` } });
+      let sourceUrl = null;
+      let resultMode = "";
+      if (items[i].url) {
+        sourceUrl = items[i].url;
+        const resolved = await resolveImageResult(sourceUrl);
+        objectUrl = resolved.url;
+        resultMode = resolved.via;
+      } else if (items[i].b64_json) {
+        const bytes = Uint8Array.from(atob(items[i].b64_json), (c) => c.charCodeAt(0));
+        objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+        resultMode = "base64";
+      } else continue;
+      const img = document.createElement("img");
+      img.src = objectUrl;
+      if (sourceUrl) img.referrerPolicy = "no-referrer";
+      const fallbackNote = resultMode === "direct" ? " · 结果代理失败，已使用原始图片直链" : "";
+      addOutput({
+        title: `${model.label} · 文生图 #${i+1}`,
+        meta: `实际模型=${model.id} · Adapter=${model.adapter || "custom"} · size=${body.size}${fallbackNote}`,
+        element: img,
+        download: { href: objectUrl, filename: `${model.id.replace(/[^a-z0-9_-]+/gi,"-")}-${ts()}-${i+1}.png` },
+        openUrl: sourceUrl,
+      });
     }
     status(`${model.label} 生成成功`, "ok");
   }
