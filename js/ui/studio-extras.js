@@ -129,8 +129,8 @@
 
   function choiceLabel(text) {
     const value = String(text || "").trim();
-    const sized = value.match(/^(\d+:\d+)\s*\((\d+)[x*](\d+)\)/i);
-    if (sized) return { main: sized[1], sub: `${sized[2]} × ${sized[3]}` };
+    const sized = value.match(/^(原生\s*)?(\d+:\d+)\s*\((\d+)[x*](\d+)\)/i);
+    if (sized) return { main: `${sized[1] ? "原生 " : ""}${sized[2]}`, sub: `${sized[3]} × ${sized[4]}` };
     return { main: value.replace(/\s*\([^)]*\)\s*$/, ""), sub: "" };
   }
 
@@ -147,7 +147,8 @@
   }
 
   function decorateSelect(select, key) {
-    if (!CHOICE_KEYS.has(key) || select.options.length < 2 || select.options.length > 8) return;
+    const maxChoices = key === "size" ? 14 : 8;
+    if (!CHOICE_KEYS.has(key) || select.options.length < 2 || select.options.length > maxChoices) return;
     if (select.dataset.studioChoice === "1") {
       syncDecoratedSelect(select);
       return;
